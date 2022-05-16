@@ -1,0 +1,74 @@
+/* ********** menu.js ********** */
+
+/**
+ * sideMenuExtend
+ * 
+ * Function to display the right side menu
+ * Can be use programmatically if a list of menu item is receive separated by colon [:]
+ * 
+ * @param menuItems	The item top open the menu to
+ * @param leaveOpen	If the menu item is open leave it open
+ * @return
+ */
+function sideMenuExtend(menuItems, leaveOpen) 
+{
+	if(menuItems)
+	{
+		var items = menuItems.split(":");
+		items.forEach(function(menuItem) 
+		{
+		    var x = document.getElementById(menuItem);
+		    if (x != null)
+			{		
+				if (x.className.indexOf("w3-show") == -1) {
+			        x.className += " w3-show";
+			        x.previousElementSibling.lastElementChild.className = "fas fa-caret-down";
+			    } else if (!leaveOpen) { 
+			        x.className = x.className.replace(" w3-show", "");        
+			        x.previousElementSibling.lastElementChild.className = "fas fa-caret-right";
+			    }
+			}
+		});
+	}
+}
+
+/**
+ * sideMenuExtend2
+ * 
+ * Same as above but without the parsing.
+ * NOT USED YET
+ * 
+ * @param menuItem
+ * @returns
+ */
+function sideMenuExtend2(menuItem)
+{
+    var x = document.getElementById(menuItem);
+    if (x.className.indexOf("w3-show") == -1)
+ 	{
+        x.className += " w3-show";
+        //x.previousElementSibling.lastElementChild.className = "fa fa-minus-square-o";
+        x.previousElementSibling.lastElementChild.className = "fas fa-caret-down";
+        var elem = x.previousElementSibling.lastElementChild;
+        var cn = elem.className;        
+        console.log(elem + " " + cn)
+    } else { 
+        x.className = x.className.replace(" w3-show", "");        
+        //x.previousElementSibling.lastElementChild.className = "fa fa-plus-square-o";
+        x.previousElementSibling.lastElementChild.className = "fas fa-caret-right";
+    }
+}
+
+//Spinner message. Need to i18n
+var blockUIMessage = "Processing request, please wait..."
+/**
+ * setSpinnerMessage
+ * 
+ * The message displayed when a user is waiting for an action to complete
+ * 
+ * @param message
+ * @returns
+ */
+function setSpinnerMessage(message) {	
+	blockUIMessage = message;
+}
