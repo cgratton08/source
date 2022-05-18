@@ -1,135 +1,122 @@
-@Configuration
-@EnableLdapRepositories
-public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
-
-	@Autowired
-	AuthenticationHandler authenticationHandler;
-	
-	@Autowired
-	LogoutHandler logoutHandler;
-	
-	@Autowired
-	CustomUserDetailService customUserDetailService;
-	
-	private final String LOGIN = "/login";
+@Service
+public class ActiveSessionService
+{
+	private static final Logger logger = LoggerFactory.getLogger(ActiveSessionService.class);
 		
-	// LDAP DATA
-	@Value("${spring.ldap.urls}")
-	private String ldapUrls;
-	
-	@Value("${spring.ldap.base}")
-	private String ldapBase;
-	
-	@Value("${spring.ldap.username}")
-	private String ldapUsername;
-	
-	@Value("${spring.ldap.password}")
-	private String ldapPassword;
-		
-	@Value("${spring.ldap.groupSearchBase}")
-	private String ldapGroupSearchBase;
+	@Autowired
+	public UserListRepository userSrvRep;
 
-	@Value("${spring.ldap.groupSearchFilter}")
-	private String ldapGroupSearchFilter;
 	
-	@Value("${app.security.enabled}")
-	private String securityLdapEnabled;
+	protected static Map<String, ActiveSession> activeSessions = new ConcurrentHashMap<>();
 	
 	/**
-	 * Because of the RMToolsMS automation working with RMToolsDB
-	 * Some urls must be enable before login to validate parameters veracity.
+	 * Register (User_List)user in memory for future reference.
+	 * This is call by our AuthenticationHandler class
 	 *
-	 * Hence the authorizeRequests() for : "/greeting", "/getHomeDirValues", "/validateDeploymentIsAllowed", "/validateFileExist", "/validateRulesFileExist", "/validateAppFileName", "/validatePropsFileName", "/validateProject/**", "/validateEnvironment/**", "/validateEnvRuntimeVersion/**", "/validateServerGroup/**", "/mailServerInfo", "/deploymentLogsInfo/**", "/getUploadedFilesInfo/**", "/validateRequesterName/**"
+	 * If a User login while he(she) got already an ActiveSession in memory
+	 * this new ActiveSession will replace the old one. 
+	 * 
+	 * If the session timeout reuse the session but reset the time registered 
+	 * 
+	 * NOTE. We do not need to implement a LogoutSuccessHandler since Spring Security
+	 * handle HttpSession clean up through SecurityContextLogoutHandler which is call through our LdapSecurityConfiguration
+	 * 
+	 * @param user
 	 */
-	@Override
-	protected void configure(HttpSecurity http) throws Exception
-	{
-		if (Boolean.parseBoolean(securityLdapEnabled)) {
-		http	
-			.csrf().disable()			
-			.authorizeRequests()
-				.antMatchers("/js/**", "/css/**", "/images/**", "/login", "/greeting", "/getHomeDirValues", "/validateDeploymentIsAllowed", "/validateFileExist", "/validateRulesFileExist", "/validateAppFileName", "/validatePropsFileName", "/validateProject/**", "/validateEnvironment/**", "/validateEnvRuntimeVersion/**", "/validateServerGroup/**", "/mailServerInfo", "/deploymentLogsInfo/**", "/getUploadedFilesInfo/**", "/validateRequesterName/**").permitAll()	
-				.and()				
-			.authorizeRequests()
-				.anyRequest()
-				.fullyAuthenticated()				
-				.and()
-			.formLogin()
-				.loginPage(LOGIN).successHandler(authenticationHandler)
-				.permitAll()
-				.and()	
-			.addFilterBefore(requestHeaderAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class).authenticationProvider(preAuthenticatedAuthenticationProvider())
-		    .logout()
-		    	.deleteCookies("JSESSIONID")
-		    	.invalidateHttpSession(true)
-		    	.addLogoutHandler(logoutHandler)		    	
-		    	.addLogoutHandler(new HeaderWriterLogoutHandler(
-		    		new ClearSiteDataHeaderWriter(ClearSiteDataHeaderWriter.Directive.CACHE,ClearSiteDataHeaderWriter.Directive.COOKIES, ClearSiteDataHeaderWriter.Directive.STORAGE)))
-		    	.logoutSuccessUrl(LOGIN)
-	    	.and()
-			.sessionManagement()
-				.invalidSessionUrl(LOGIN)
-				.maximumSessions(1).expiredUrl(LOGIN);			
+	public void addActiveSession(UserList user) {	
+		
+		if (!activeSessions.containsKey(user.getUserId().toLowerCase())) {
+			ActiveSession as = new ActiveSession(user, LocalDateTime.now());
+			activeSessions.put(user.getUserId().toLowerCase(), as);
+			logger.info("User {} logged in at {}, {}",user.getUserId(), as.getTimeRegistered(), as);
 		} else {
-			http.authorizeRequests().antMatchers("/**").permitAll();
+			ActiveSession as = activeSessions.get(user.getUserId().toLowerCase());
+			as.setTimeRegistered(LocalDateTime.now());
 		}
 	}
 	
-    /**
-     * Disable Spring boot automatic filter registration.
-     */
-    @Bean
-    FilterRegistrationBean<RequestHeaderAuthenticationFilter> disableAutoRegistration(final RequestHeaderAuthenticationFilter filter)
-    {
-        final FilterRegistrationBean<RequestHeaderAuthenticationFilter> registration = new FilterRegistrationBean<>(filter);
-        registration.setEnabled(false);
-        return registration;
-    }
-    
-	@Override
-	public void configure(AuthenticationManagerBuilder auth) throws Exception 
-	{	
-		auth.authenticationProvider(preAuthenticatedAuthenticationProvider());
-		
-		auth.ldapAuthentication()
-		.userSearchFilter("(uid={0})")
-		.groupSearchBase(ldapGroupSearchBase)
-		.groupSearchFilter(ldapGroupSearchFilter)
-		.contextSource()
-		.url(ldapUrls + ldapBase)
-		.managerDn(ldapUsername)
-		.managerPassword(ldapPassword);
-		
-	}
-
-	@Bean(name="authenticationManager")
-	@Override
-	public AuthenticationManager authenticationManagerBean() throws Exception {
-	    return super.authenticationManagerBean();
+	public void deleteActiveSession(String uid) {
+		if (activeSessions.remove(uid.toLowerCase()) != null)
+			logger.info("Removing user {} from active sessions.", uid);
 	}
 	
-	@Bean(name="webSealPreAuthFilter")
-	public RequestHeaderAuthenticationFilter requestHeaderAuthenticationFilter() throws Exception
-	{
-		RequestHeaderAuthenticationFilter filter = new RequestHeaderAuthenticationFilter();
-		filter.setAuthenticationManager(authenticationManager());
-		filter.setPrincipalRequestHeader("iv-user");
-		filter.setCheckForPrincipalChanges(false);
-		filter.setExceptionIfHeaderMissing(false);
-		filter.setAuthenticationSuccessHandler(authenticationHandler);
-		
-		return filter;
+	public ActiveSession getActiveSession(String uid) {
+		return activeSessions.get(uid.toLowerCase());
 	}
 
-	@Bean(name="preAuthenticatedAuthenticationProvider")
-	PreAuthenticatedAuthenticationProvider preAuthenticatedAuthenticationProvider()
+	public List<ActiveSession> getActiveSessions() {
+		return activeSessions.values().stream().collect(Collectors.toList());		
+	}
+				
+	/**
+	 * Return the DB representation of the currently logged in (User_List)user
+	 * from the HttpSession
+	 * 
+	 * @param uid
+	 * @return UserList
+	 */
+	public UserList getLoggedUser()
 	{
-		PreAuthenticatedAuthenticationProvider provider = new PreAuthenticatedAuthenticationProvider();
+		String uid = getLoggedUserId();
 		
-		provider.setPreAuthenticatedUserDetailsService(customUserDetailService);
-		
-		return provider;
+		if (uid != null && activeSessions.containsKey(uid.toLowerCase())) 
+			return activeSessions.get(uid.toLowerCase()).getUser();
+
+		return null;
 	}
 
+	/**
+	 * Return the full name of the currently logged in user
+	 * 
+	 * @return String The full name of the active user
+	 */
+	public String getActiveUserFullName()
+	{
+		UserList user = getLoggedUser();
+		if (user != null)
+			return user.getName();
+		
+		return "";
+	}
 
+	private String getLoggedUserId() {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		if (auth != null)
+			return auth.getName();
+		
+		return null;
+	}
+
+	/**
+	 * Return if a user has a certain role
+	 * 
+	 * @param role
+	 * @return
+	 */
+	public boolean isUserInRole(String role) 
+	{		
+		if (StringUtils.isEmpty(role))
+			return false;
+		
+		UserList user = userSrvRep.findByUserIdIgnoringCase(getLoggedUserId());				
+		return  user.getGroups().stream().anyMatch(g -> g.getName().equalsIgnoreCase(role));
+	}
+	
+	/**
+	 * Return if a user has a certain role
+	 * 
+	 * @param role
+	 * @return
+	 */
+	public boolean isUserInRole(UserList user, String role) 
+	{		
+		if (StringUtils.isEmpty(role))
+			return false;
+							
+		return  user.getGroups().stream().anyMatch(g -> g.getName().equalsIgnoreCase(role));
+	}
+	
+	public boolean isActive(UserList user) {
+		return Boolean.parseBoolean(user.getActive());
+	}
 }
