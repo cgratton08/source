@@ -1,33 +1,135 @@
-/**
- * isAuthenticated
- *
- * Validate the user is authenticated to RMToolsMS.
- * Most JS function will use this function to validate user access
- * 
- * In case of a server restart the user need to login again.
- * The UI need to refresh the entire page and not just the [containerData] div.
- * 
- * @returns true or false
- */
-function isAuthenticated() 
-{
-	var authenticated = false;
+@Configuration
+@EnableLdapRepositories
+public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
-	$.ajax(
+	@Autowired
+	AuthenticationHandler authenticationHandler;
+	
+	@Autowired
+	LogoutHandler logoutHandler;
+	
+	@Autowired
+	CustomUserDetailService customUserDetailService;
+	
+	private final String LOGIN = "/login";
+		
+	// LDAP DATA
+	@Value("${spring.ldap.urls}")
+	private String ldapUrls;
+	
+	@Value("${spring.ldap.base}")
+	private String ldapBase;
+	
+	@Value("${spring.ldap.username}")
+	private String ldapUsername;
+	
+	@Value("${spring.ldap.password}")
+	private String ldapPassword;
+		
+	@Value("${spring.ldap.groupSearchBase}")
+	private String ldapGroupSearchBase;
+
+	@Value("${spring.ldap.groupSearchFilter}")
+	private String ldapGroupSearchFilter;
+	
+	@Value("${app.security.enabled}")
+	private String securityLdapEnabled;
+	
+	/**
+	 * Because of the RMToolsMS automation working with RMToolsDB
+	 * Some urls must be enable before login to validate parameters veracity.
+	 *
+	 * Hence the authorizeRequests() for : "/greeting", "/getHomeDirValues", "/validateDeploymentIsAllowed", "/validateFileExist", "/validateRulesFileExist", "/validateAppFileName", "/validatePropsFileName", "/validateProject/**", "/validateEnvironment/**", "/validateEnvRuntimeVersion/**", "/validateServerGroup/**", "/mailServerInfo", "/deploymentLogsInfo/**", "/getUploadedFilesInfo/**", "/validateRequesterName/**"
+	 */
+	@Override
+	protected void configure(HttpSecurity http) throws Exception
 	{
-		async : true,
-		type : 'GET',
-		url : '/isLogin',
-		success : function(data) 
-		{
-			if (data == true) {
-				authenticated = true;
-			} else {
-				authenticated = false;
-				$("html").html(data);
-			}
+		if (Boolean.parseBoolean(securityLdapEnabled)) {
+		http	
+			.csrf().disable()			
+			.authorizeRequests()
+				.antMatchers("/js/**", "/css/**", "/images/**", "/login", "/greeting", "/getHomeDirValues", "/validateDeploymentIsAllowed", "/validateFileExist", "/validateRulesFileExist", "/validateAppFileName", "/validatePropsFileName", "/validateProject/**", "/validateEnvironment/**", "/validateEnvRuntimeVersion/**", "/validateServerGroup/**", "/mailServerInfo", "/deploymentLogsInfo/**", "/getUploadedFilesInfo/**", "/validateRequesterName/**").permitAll()	
+				.and()				
+			.authorizeRequests()
+				.anyRequest()
+				.fullyAuthenticated()				
+				.and()
+			.formLogin()
+				.loginPage(LOGIN).successHandler(authenticationHandler)
+				.permitAll()
+				.and()	
+			.addFilterBefore(requestHeaderAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class).authenticationProvider(preAuthenticatedAuthenticationProvider())
+		    .logout()
+		    	.deleteCookies("JSESSIONID")
+		    	.invalidateHttpSession(true)
+		    	.addLogoutHandler(logoutHandler)		    	
+		    	.addLogoutHandler(new HeaderWriterLogoutHandler(
+		    		new ClearSiteDataHeaderWriter(ClearSiteDataHeaderWriter.Directive.CACHE,ClearSiteDataHeaderWriter.Directive.COOKIES, ClearSiteDataHeaderWriter.Directive.STORAGE)))
+		    	.logoutSuccessUrl(LOGIN)
+	    	.and()
+			.sessionManagement()
+				.invalidSessionUrl(LOGIN)
+				.maximumSessions(1).expiredUrl(LOGIN);			
+		} else {
+			http.authorizeRequests().antMatchers("/**").permitAll();
 		}
-	});
+	}
+	
+    /**
+     * Disable Spring boot automatic filter registration.
+     */
+    @Bean
+    FilterRegistrationBean<RequestHeaderAuthenticationFilter> disableAutoRegistration(final RequestHeaderAuthenticationFilter filter)
+    {
+        final FilterRegistrationBean<RequestHeaderAuthenticationFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
+    
+	@Override
+	public void configure(AuthenticationManagerBuilder auth) throws Exception 
+	{	
+		auth.authenticationProvider(preAuthenticatedAuthenticationProvider());
+		
+		auth.ldapAuthentication()
+		.userSearchFilter("(uid={0})")
+		.groupSearchBase(ldapGroupSearchBase)
+		.groupSearchFilter(ldapGroupSearchFilter)
+		.contextSource()
+		.url(ldapUrls + ldapBase)
+		.managerDn(ldapUsername)
+		.managerPassword(ldapPassword);
+		
+	}
 
-	return authenticated;
+	@Bean(name="authenticationManager")
+	@Override
+	public AuthenticationManager authenticationManagerBean() throws Exception {
+	    return super.authenticationManagerBean();
+	}
+	
+	@Bean(name="webSealPreAuthFilter")
+	public RequestHeaderAuthenticationFilter requestHeaderAuthenticationFilter() throws Exception
+	{
+		RequestHeaderAuthenticationFilter filter = new RequestHeaderAuthenticationFilter();
+		filter.setAuthenticationManager(authenticationManager());
+		filter.setPrincipalRequestHeader("iv-user");
+		filter.setCheckForPrincipalChanges(false);
+		filter.setExceptionIfHeaderMissing(false);
+		filter.setAuthenticationSuccessHandler(authenticationHandler);
+		
+		return filter;
+	}
+
+	@Bean(name="preAuthenticatedAuthenticationProvider")
+	PreAuthenticatedAuthenticationProvider preAuthenticatedAuthenticationProvider()
+	{
+		PreAuthenticatedAuthenticationProvider provider = new PreAuthenticatedAuthenticationProvider();
+		
+		provider.setPreAuthenticatedUserDetailsService(customUserDetailService);
+		
+		return provider;
+	}
+
+
 }
