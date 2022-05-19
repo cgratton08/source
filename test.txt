@@ -1,122 +1,75 @@
-@Service
-public class ActiveSessionService
-{
-	private static final Logger logger = LoggerFactory.getLogger(ActiveSessionService.class);
-		
-	@Autowired
-	public UserListRepository userSrvRep;
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1" pageEncoding="ISO-8859-1"%>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
+<%@ page import="com.intact.rmtools.utils.AppMode" %>
 
-	
-	protected static Map<String, ActiveSession> activeSessions = new ConcurrentHashMap<>();
-	
-	/**
-	 * Register (User_List)user in memory for future reference.
-	 * This is call by our AuthenticationHandler class
-	 *
-	 * If a User login while he(she) got already an ActiveSession in memory
-	 * this new ActiveSession will replace the old one. 
-	 * 
-	 * If the session timeout reuse the session but reset the time registered 
-	 * 
-	 * NOTE. We do not need to implement a LogoutSuccessHandler since Spring Security
-	 * handle HttpSession clean up through SecurityContextLogoutHandler which is call through our LdapSecurityConfiguration
-	 * 
-	 * @param user
-	 */
-	public void addActiveSession(UserList user) {	
-		
-		if (!activeSessions.containsKey(user.getUserId().toLowerCase())) {
-			ActiveSession as = new ActiveSession(user, LocalDateTime.now());
-			activeSessions.put(user.getUserId().toLowerCase(), as);
-			logger.info("User {} logged in at {}, {}",user.getUserId(), as.getTimeRegistered(), as);
-		} else {
-			ActiveSession as = activeSessions.get(user.getUserId().toLowerCase());
-			as.setTimeRegistered(LocalDateTime.now());
-		}
-	}
-	
-	public void deleteActiveSession(String uid) {
-		if (activeSessions.remove(uid.toLowerCase()) != null)
-			logger.info("Removing user {} from active sessions.", uid);
-	}
-	
-	public ActiveSession getActiveSession(String uid) {
-		return activeSessions.get(uid.toLowerCase());
-	}
+<html>
+<head>
+    <title>Login Page</title> 
+    
+   	<link type="text/css" rel="stylesheet" href="/css/bootstrap/bootstrap.min.css" /> 
+    <link type="text/css" rel="stylesheet" href="/css/w3schools/w3.css"  />
+    <link type="text/css" rel="stylesheet" href="/css/template.css" /> 
+    <link type="text/css" rel="stylesheet" href="/css/container.css" /> 
+    <link type="image/x-icon" href="/images/favicon.ico" rel="shortcut icon">
+    
+</head>
 
-	public List<ActiveSession> getActiveSessions() {
-		return activeSessions.values().stream().collect(Collectors.toList());		
-	}
-				
-	/**
-	 * Return the DB representation of the currently logged in (User_List)user
-	 * from the HttpSession
-	 * 
-	 * @param uid
-	 * @return UserList
-	 */
-	public UserList getLoggedUser()
-	{
-		String uid = getLoggedUserId();
-		
-		if (uid != null && activeSessions.containsKey(uid.toLowerCase())) 
-			return activeSessions.get(uid.toLowerCase()).getUser();
+<body onload="document.getElementById('username').focus();">
 
-		return null;
-	}
+<spring:message code='login.title' var="loginTitle"/>
+<spring:message code='login.message' var="loginMessage"/>
+<spring:message code='application.mode.maintenance' var="maintenanceMessage"/>
 
-	/**
-	 * Return the full name of the currently logged in user
-	 * 
-	 * @return String The full name of the active user
-	 */
-	public String getActiveUserFullName()
-	{
-		UserList user = getLoggedUser();
-		if (user != null)
-			return user.getName();
-		
-		return "";
-	}
+<!-- Header -->
+<div class="header w3-bar w3-border">
+    <div id="headerMenu">        
+        <p class="w3-bar-item w3-right"><a href="?lang=en" class="headerMenu w3-hover-black"><spring:message code="header.en"/></a> | <a href="?lang=fr" class="headerMenu w3-hover-black"><spring:message code="header.fr"/></a></p>
+        <p class="w3-bar-item w3-right">${appVersion}</p>
+    </div>
+</div>
 
-	private String getLoggedUserId() {
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-		if (auth != null)
-			return auth.getName();
-		
-		return null;
-	}
+<div id="form-wrapper" class="login" style="display: block;">
 
-	/**
-	 * Return if a user has a certain role
-	 * 
-	 * @param role
-	 * @return
-	 */
-	public boolean isUserInRole(String role) 
-	{		
-		if (StringUtils.isEmpty(role))
-			return false;
-		
-		UserList user = userSrvRep.findByUserIdIgnoringCase(getLoggedUserId());				
-		return  user.getGroups().stream().anyMatch(g -> g.getName().equalsIgnoreCase(role));
-	}
-	
-	/**
-	 * Return if a user has a certain role
-	 * 
-	 * @param role
-	 * @return
-	 */
-	public boolean isUserInRole(UserList user, String role) 
-	{		
-		if (StringUtils.isEmpty(role))
-			return false;
-							
-		return  user.getGroups().stream().anyMatch(g -> g.getName().equalsIgnoreCase(role));
-	}
-	
-	public boolean isActive(UserList user) {
-		return Boolean.parseBoolean(user.getActive());
-	}
-}
+<p class="home text-reflect" data-text="${loginTitle}"><spring:message code='login.title'/></p>
+<br><br>
+<p class="home text-reflect" data-text="${loginMessage}" style="font-size: 14px;"><spring:message code='login.message'/></p>
+<br>
+
+<c:if test="${appMode == AppMode.MAINTENANCE}">
+	<p class="home text-reflect error" data-text="${maintenanceMessage}" style="font-size: 14px;"><spring:message code='application.mode.maintenance'/></p>
+	<br><br>
+</c:if>
+
+<form id="loginForm" action="/login" method="post" style="margin: auto; width: 450px;">
+    
+    <div class="input-group">
+        <span class="input-group-addon" style="min-width: 200px;"><i class="glyphicon glyphicon-font"></i>&nbsp;&nbsp;<spring:message code='login.username'/></span>            
+        <input id="username" name="username" class="form-control" type="text" maxlength="37" style="width: 250px;">                              
+    </div>      
+    
+    <div class="input-group">
+        <span class="input-group-addon" style="min-width: 200px;"><i class="glyphicon glyphicon-font"></i>&nbsp;&nbsp;<spring:message code='login.password'/></span>            
+        <input id="password" name="password" class="form-control" type="password" maxlength="37" style="width: 250px;">                              
+    </div>      
+        
+    <c:if test="${param.error != null}">        
+        <p class="error"><spring:message code='login.error.message'/></p>
+    </c:if>        
+    
+    <c:if test="${param.inactive != null}">        
+        <p class="error"><spring:message code='login.inactive.message'/></p>
+    </c:if>        
+
+    <div class="form-group">        
+        <div class="col-sm-offset-5 col-sm-7 submitButton" style="padding-right: 0px;">
+            <button type="submit" id="loginButton" class="btn btn-secondary" onclick="this.form.submit();" ><spring:message code='button.submit'/></button>
+        </div>
+    </div>
+</form>
+
+</div>
+
+</body>
+</html>
