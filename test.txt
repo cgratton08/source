@@ -1,1 +1,65 @@
+public class ActiveSession
+{
+	private UserList user;
+	
+	private LocalDateTime timeRegistered;
+
+	DateTimeFormatter fFormatter = DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy HH:mm:ss", Locale.FRENCH);
+	DateTimeFormatter eFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM dd yyyy HH:mm:ss", Locale.ENGLISH);
+	
+	public ActiveSession(UserList user, LocalDateTime timeRegistered) {
+		this.user = user;
+		this.timeRegistered = timeRegistered;
+	}
+
+	public UserList getUser() {
+		return user;
+	}
+
+	public void setUser(UserList user) {
+		this.user = user;
+	}
+
+	public LocalDateTime getTimeRegistered() {
+		return timeRegistered;
+	}
+
+	public String getTimeRegisteredFormatted() 
+	{
+		if (LocaleContextHolder.getLocale().getLanguage().equals(new Locale("fr").getLanguage()))
+			return timeRegistered.format(fFormatter);
+		else	
+			return timeRegistered.format(eFormatter);
+			
+	}
+	
+	public void setTimeRegistered(LocalDateTime timeRegistered) {
+		this.timeRegistered = timeRegistered;
+	}
+
+	public String getTimeElapse() 
+	{
+		LocalDateTime now = LocalDateTime.now();
+		
+		long hours = Duration.between(timeRegistered, now).toHours();
+
+		long minutes = Duration.between(timeRegistered, now).toMinutes();
+		if (minutes >= 60)
+			minutes = minutes % 60;
+		
+		long seconds = Duration.between(timeRegistered, now).toMillis() / 1000;
+		if (seconds >= 60)
+			seconds = seconds % 60;
+				
+		return hours + " H " + minutes + " M " + seconds + " S";
+	}
+	
+	@Override
+	public String toString() {
+		return "ActiveSession [user=" + user + ", timeRegistered=" + timeRegistered + "]";
+	}
+
+
+		
+}
 
