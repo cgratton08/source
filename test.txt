@@ -1,374 +1,174 @@
-/* ********** Home Pages ********** */
-.home {
-    font-size: 5.0em;
-    font-family: Verdana,sans-serif;
-	color: var(--mainFontColor);
-    text-shadow: var(--mainTextShadow);
-        
-    margin: auto;
-    text-align: center;
-}
-
-.home p {
-    font-size: 0.5em;	
-}
-
-/* */
-.search {
-	width:690px; 
-	height:60px; 
-	/* float: left; */ 
-	padding-left: 25px; 
-	background: white; 
-	margin-bottom: 40px; 
-	padding-top: 12.5px; 
-	border-radius: 4px;
-	border: 1px solid var(--mainColor);	
-}
-
-:lang(en) .searchBoxButton {
-	margin-right: 25px; 
-	margin-top: 6px;	
-}
-
-:lang(fr) .searchBoxButton {
-	margin-right: 13px; 
-	margin-top: 6px;	
-}
-
-#scrollSwitchDiv {
-	position: fixed; width: 130px; z-index: 10; color: black; right: 10px;
-	margin-top: 8px;
-}
-
-/* ********** Error message ********** At top of Container div */
-.error {
-	margin-top: 10px;
-	padding-left: 5px;
-	padding-right: 5px;
-    background-color: #f2dede;
-    border: 1px solid #a94442;
-    font-family: Verdana,sans-serif;
-	color: var(--mainFontColor);
-    text-shadow: var(--mainTextShadow);
-}
-
-.message {
-    margin-top: 10px;
-    padding-left: 5px;
-    padding-right: 5px;
-    background-color: #eaeae6;
-    border: 1px solid #000000;
-    font-family: Verdana,sans-serif;
-	color: var(--mainFontColor);
-    text-shadow: var(--mainTextShadow);
-}
-
-/* ********** Error message ********** Page wise */
-div #error {
-    margin: 0 auto;
-    margin-top: 30px;
-    font-size: 0.9em;
-    font-family: Verdana,sans-serif;
-	color: var(--mainFontColor);
-    text-shadow: var(--mainTextShadow);  
-}
-
-/* ********** Datatables ********** */
-.dataTables_wrapper {	
-	margin: 0 auto;
-	margin-top: 30px;
-	width: 100%;
-}
-
-.dataTables_length, .datatables_info {
-	text-align: left;
-}
-
-.table {
-    font-size: var(--mainFontSize);
-}
-
-.table thead tr th input {
+/* ********** Global variables ********** */
+:root {
+	/* maroon h: 0, s: 100%, l: 25%*/
+  --primary-color-h: 0;
+  --primary-color-s: 100%;
+  --primary-color-l: 25%;
 	
-    width: 95%;	
-    background-color: #fff;
-    background-image: none;
-    border: 1px solid var(--mainColor);
-    border-radius: 4px;
-    width: -webkit-fill-horizontal;
+  --mainFontColor: black;
+  --mainTextShadow: 2px 2px 3px #ccc;	
+  --mainFontSize: 10.5px;
+  --mainColor: hsl(var(--primary-color-h), var(--primary-color-s), var(--primary-color-l));
+  --mainActiveColor: green;
+  --mainNonActiveColor: firebrick;
+  
+  /* button */
+  --mainButtonTXColor: white;
+  --mainButtonBorderColor: white;
+  
+  --mainButtonBGColor: hsl(var(--primary-color-h), var(--primary-color-s), var(--primary-color-l));
+  --mainButtonBGColorDarker: hsl(var(--primary-color-h), var(--primary-color-s), calc(var(--primary-color-l) - 10%));
+
 }
 
-.table thead tr th input:focus {
-	outline: none;
-}
+/* ********** template.jsp ********** */
+button:focus {outline:0;}
 
-.table tfoot tr th input {
-	
-    width: 95%;	
-    background-color: #fff;
-    background-image: none;
-    border: 1px solid var(--mainColor);
-    border-radius: 4px;
-}
-
-.table tfoot tr th input:focus {
-	outline: none;
-}
-
-.pagination>.active>a, .pagination>.active>a:focus, .pagination>.active>a:hover, .pagination>.active>span, .pagination>.active>span:focus, .pagination>.active>span:hover {
-    background-color: var(--mainColor);
-    border-color: var(--mainColor);
-    outline:0;
-}
-
-.pagination>li>a, .pagination>li>span {
-    color: var(--mainColor);
-    outline:0;
-}
-
-.pagination>li>a:focus, .pagination>li>a:hover, .pagination>li>span:focus, .pagination>li>span:hover {
-    color: var(--mainColor);
-    outline:0;
-}
-
-.glyphicon {
-    color: var(--mainColor);        
-}
-
-.glyphicon:hover {
-    color: black;    
-    font-weight: bold;
-}
-
-.material-icons {
-	color: var(--mainColor);
-	font-size: 14px;
-}
-
-.material-icons:hover {
-    color: black;    
-    font-weight: bold;
-}
-
-.containerDataTitle {
-    font-family: Verdana,sans-serif;
-    font-size: 1.4em;
-}
-
-#containerData hr {
-	margin: 0px 0;	
-}
-
-.table-group {
-	background-color: #f9f9f9;
-}
-
-/* Form */
-#form-wrapper {
-    width: auto;
-    margin-top: 30px;
-    margin-left: auto;
-    margin-right: auto;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-}
-
-.form-control {
-	font-size: var(--mainFontSize);
-	border-left: 1px;
-	resize: horizontal;
-}
-
-.form-input-error {
-	border-top: 0; 
-	border-radius: inherit;
-} 
-
-.input-group {
-	margin-bottom: 10px;	
-	width: 750px;
-}
-
-.input-group-addon {
-	border-right: 1px solid #ccc;
-	font-size: var(--mainFontSize);
-    min-width: 350px;
-    text-align: left;
-}
-
-.input-group-addon.form-control {
-    border-left: 0px;   
-}
-
-.btn {
-	color: var(--mainButtonTXColor);
-	font-size: var(--mainFontSize);
-	background: var(--mainButtonBGColor);
-}
-.btn:focus {
+a:focus {
 	color: white;
 }
+/* ********** Login Menu ********** */
 
-.btn-secondary-search {
-	float: right;
-	margin-left: 30px;
+.login {
+    margin: auto;   
+    width: 99%;
+    padding: 150px 0;           
 }
 
-.btn-secondary {
-	float: right;
-	margin-left: 10px;
+/* ********** Header Menu ********** */
+.header {
+    height:40px; 
+    width: 100%;    
+    color: white;
+    line-height: 25px;    
+    background-color: var(--mainColor);    
+    font-size: var(--mainFontSize);    	    
 }
 
-/* .btn-submit {
-    color: var(--mainButtonTXColor);
-    background: var(--mainButtonBGColor);
-    border-color: var(--mainButtonBorderColor);
-    float: right;
-} */
-
-.btn:hover {
-    color: var(--mainButtonTXColor);
-    border-color: var(--mainButtonBorderColor);
-    text-decoration: none;
-    background-color: var(--mainButtonBGColorDarker);
+a.headerMenu:link { text-decoration: none;}
+.headerMenu.active {
+    background-color: white;
+    color: var(--mainColor);
 }
 
-/* Create columns that floats next to each other for form select */
-.formColumn {
-    float: left;
-    margin-bottom: 20px;
-}
+/* ********** Side Menu ********** */
+.menu {			
+	float:left;
+	width: 255px;
 
-.formColumn2 {
-    float: left;
-    width: 55px;
-    margin-top: 65px;
-}
-
-.formColumn2 button {
-    margin-bottom: 10px;
-    width: 33px
-}
-
-.formRow {
-    width: 750px;
-    margin: 0 auto;
-}
-
-/* Clear floats after the columns */
-.formRow:after {
-    content: "";
-    display: table;
-    clear: both;
-}
-
-legend {
+	margin-top: 11px;
+	left: 0px;
+    right: 0px;
+    bottom: 20px;
 	font-size: var(--mainFontSize);
-	margin-bottom: 5px;
+	overflow: auto;
+	white-space: nowrap;
+	
+	color: var(--mainFontColor);
+    text-shadow: var(--mainTextShadow);
 }
 
-.modal-dialog-wide {
-    width: 1312px;	
+.menu button {
+	color: var(--mainFontColor);
+    text-shadow: var(--mainTextShadow);
 }
 
-/* File upload */
-.btn-file {
+.menu ul li a:link, .menu a:visited {
+	text-decoration: none;
+	color: var(--mainColor);	
+}
+
+.menu ul li a:hover {
+    color: var(--mainColor);    
+    font-weight: bold;    
+    white-space: nowrap;
+}
+
+.menu ul {
+    padding-left: 18px;
+    margin-top: 5px;
+}
+
+
+/* ********** container ********** */
+.container {
+	float:left;
+	width:86%;
+	font-size: var(--mainFontSize);
+	
+	margin-top: 30px;
+    position:absolute;
+    top: 40px;        
+    right: 0px;
+    bottom: 20px;        
+    overflow-y: auto;  
+    
+	color: var(--mainFontColor);
+    text-shadow: var(--mainTextShadow);
+}
+
+/* ********** blockUI ********** */
+
+.buttonload {
+    background-color: var(--mainColor);
+    border: none; /* Remove borders */
+    color: white; /* White text */
+    padding: 12px 24px; /* Some padding */
+    font-size: 16px; /* Set a font-size */
+}
+
+/* Add a right margin to each icon */
+i.fas {
+    margin-left: -12px;
+    margin-right: 8px;
+    font-size: 1.2em;
+}
+
+/* ********** TEXT-REFLECT CSS ********** */
+.text-reflect {
     position: relative;
-    overflow: hidden;
-    text-shadow: 0px 0px 0px #ccc;
 }
-.btn-file input[type=file] {
+.text-reflect:before, .text-reflect:after {
+    display: block;
     position: absolute;
-    top: 0;
+    bottom: -.81em; /* You should change this value to fit your font */
+    left: 0;
     right: 0;
-    min-width: 100%;
-    min-height: 100%;
-    font-size: 100px;
-    font-family: Verdana,sans-serif;
-    text-align: right;
-    filter: alpha(opacity=0);
-    opacity: 0;
-    outline: none;
-    background: white;   
-    cursor: inherit;
-    display: block;   
+}
+.text-reflect:before {
+    content: attr(data-text);
+    opacity: .3;
+
+    /* This is how the text is flipped vertically */
+    -webkit-transform: scaleY(-1);
+    -moz-transform: scaleY(-1);
+    -o-transform: scaleY(-1);
+    -ms-transform: scale(1,-1);    
+    transform: scateY(-1);
+}
+.text-reflect:after {
+    /* Fading using CSS gradient */
+    /* Don't forget to change the colors to your background color */
+    background: -webkit-gradient(linear, left top, left center, from(rgba(255,255,255,0)), to(rgb(255,255,255)));
+    background: -moz-linear-gradient(top, rgba(255,255,255,0), rgb(255,255,255));
+    background: -ms-linear-gradient(top, rgba(255,255,255,0), rgb(255,255,255) 52%);
+    background: linear-gradient(top, rgba(255,255,255,0), rgb(255,255,255));
+
+    /* I left out the `filter` property, because IE doesn't know `:before` and `:after` pseudo-elements anyway */
+    content: ' ';
+    height: 1em;
 }
 
-.btn-disabled  {
-	cursor: not-allowed;
-	box-shadow: none;
-    opacity: .65;
+/* ********** User List Link CSS ********** */
+.userName a:link, .userName a:visited {
+	text-decoration: none;
+	color: var(--mainColor);	
 }
 
-.btn-disabled:hover {
-    color: #fff;
-    background-color: #337ab7;
-    border-color: #2e6da4;
+.userName a:hover {
+    color: var(--mainColor);    
+    font-weight: bold;    
+    white-space: nowrap;
+    text-decoration: none;
 }
 
-/* Application State Viewer */
-.redeployable {
-	text-align: right; 
-	color: var(--mainActiveColor); 
-	font-weight: bold;
-}
-
-.nonRedeployable {
-	text-align: right;
-	color: var(--mainNonActiveColor); 
-	font-weight: bold;
-}
-
-/* Deployment History Update Status */
-.statusSuccess {
-	color: var(--mainActiveColor); padding-right: 5px;	
-}
-
-.statusFailed {
-	color: var(--mainNonActiveColor); padding-right: 5px;	
-}
-
-/* User active, non active */
-.userActive {
-	color: var(--mainActiveColor); padding-right: 5px;	
-}
-
-.userNonActive {
-	color: var(--mainNonActiveColor); padding-right: 5px;	
-}
-
-/* Edit / Delete */
-.edit {
-	color: var(--mainActiveColor); padding-right: 5px;	
-}
-
-.delete {
-	color: var(--mainNonActiveColor); 
-}
-
-.delete:hover {
-	cursor: pointer;
-}
-
-.activate:hover {
-	cursor: pointer;
-}
-
-.clean {
-	padding-right: 5px;
-}
-.clean:hover {
-	cursor: pointer;
-}
-
-.stripped {
-background: repeating-linear-gradient(
-  -55deg,
-  white,
-  white 7px,
-  #ddd 7px,
-  #ddd 12px
-);	
-}
