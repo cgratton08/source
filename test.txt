@@ -1,65 +1,374 @@
-public class ActiveSession
-{
-	private UserList user;
-	
-	private LocalDateTime timeRegistered;
-
-	DateTimeFormatter fFormatter = DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy HH:mm:ss", Locale.FRENCH);
-	DateTimeFormatter eFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM dd yyyy HH:mm:ss", Locale.ENGLISH);
-	
-	public ActiveSession(UserList user, LocalDateTime timeRegistered) {
-		this.user = user;
-		this.timeRegistered = timeRegistered;
-	}
-
-	public UserList getUser() {
-		return user;
-	}
-
-	public void setUser(UserList user) {
-		this.user = user;
-	}
-
-	public LocalDateTime getTimeRegistered() {
-		return timeRegistered;
-	}
-
-	public String getTimeRegisteredFormatted() 
-	{
-		if (LocaleContextHolder.getLocale().getLanguage().equals(new Locale("fr").getLanguage()))
-			return timeRegistered.format(fFormatter);
-		else	
-			return timeRegistered.format(eFormatter);
-			
-	}
-	
-	public void setTimeRegistered(LocalDateTime timeRegistered) {
-		this.timeRegistered = timeRegistered;
-	}
-
-	public String getTimeElapse() 
-	{
-		LocalDateTime now = LocalDateTime.now();
-		
-		long hours = Duration.between(timeRegistered, now).toHours();
-
-		long minutes = Duration.between(timeRegistered, now).toMinutes();
-		if (minutes >= 60)
-			minutes = minutes % 60;
-		
-		long seconds = Duration.between(timeRegistered, now).toMillis() / 1000;
-		if (seconds >= 60)
-			seconds = seconds % 60;
-				
-		return hours + " H " + minutes + " M " + seconds + " S";
-	}
-	
-	@Override
-	public String toString() {
-		return "ActiveSession [user=" + user + ", timeRegistered=" + timeRegistered + "]";
-	}
-
-
-		
+/* ********** Home Pages ********** */
+.home {
+    font-size: 5.0em;
+    font-family: Verdana,sans-serif;
+	color: var(--mainFontColor);
+    text-shadow: var(--mainTextShadow);
+        
+    margin: auto;
+    text-align: center;
 }
 
+.home p {
+    font-size: 0.5em;	
+}
+
+/* */
+.search {
+	width:690px; 
+	height:60px; 
+	/* float: left; */ 
+	padding-left: 25px; 
+	background: white; 
+	margin-bottom: 40px; 
+	padding-top: 12.5px; 
+	border-radius: 4px;
+	border: 1px solid var(--mainColor);	
+}
+
+:lang(en) .searchBoxButton {
+	margin-right: 25px; 
+	margin-top: 6px;	
+}
+
+:lang(fr) .searchBoxButton {
+	margin-right: 13px; 
+	margin-top: 6px;	
+}
+
+#scrollSwitchDiv {
+	position: fixed; width: 130px; z-index: 10; color: black; right: 10px;
+	margin-top: 8px;
+}
+
+/* ********** Error message ********** At top of Container div */
+.error {
+	margin-top: 10px;
+	padding-left: 5px;
+	padding-right: 5px;
+    background-color: #f2dede;
+    border: 1px solid #a94442;
+    font-family: Verdana,sans-serif;
+	color: var(--mainFontColor);
+    text-shadow: var(--mainTextShadow);
+}
+
+.message {
+    margin-top: 10px;
+    padding-left: 5px;
+    padding-right: 5px;
+    background-color: #eaeae6;
+    border: 1px solid #000000;
+    font-family: Verdana,sans-serif;
+	color: var(--mainFontColor);
+    text-shadow: var(--mainTextShadow);
+}
+
+/* ********** Error message ********** Page wise */
+div #error {
+    margin: 0 auto;
+    margin-top: 30px;
+    font-size: 0.9em;
+    font-family: Verdana,sans-serif;
+	color: var(--mainFontColor);
+    text-shadow: var(--mainTextShadow);  
+}
+
+/* ********** Datatables ********** */
+.dataTables_wrapper {	
+	margin: 0 auto;
+	margin-top: 30px;
+	width: 100%;
+}
+
+.dataTables_length, .datatables_info {
+	text-align: left;
+}
+
+.table {
+    font-size: var(--mainFontSize);
+}
+
+.table thead tr th input {
+	
+    width: 95%;	
+    background-color: #fff;
+    background-image: none;
+    border: 1px solid var(--mainColor);
+    border-radius: 4px;
+    width: -webkit-fill-horizontal;
+}
+
+.table thead tr th input:focus {
+	outline: none;
+}
+
+.table tfoot tr th input {
+	
+    width: 95%;	
+    background-color: #fff;
+    background-image: none;
+    border: 1px solid var(--mainColor);
+    border-radius: 4px;
+}
+
+.table tfoot tr th input:focus {
+	outline: none;
+}
+
+.pagination>.active>a, .pagination>.active>a:focus, .pagination>.active>a:hover, .pagination>.active>span, .pagination>.active>span:focus, .pagination>.active>span:hover {
+    background-color: var(--mainColor);
+    border-color: var(--mainColor);
+    outline:0;
+}
+
+.pagination>li>a, .pagination>li>span {
+    color: var(--mainColor);
+    outline:0;
+}
+
+.pagination>li>a:focus, .pagination>li>a:hover, .pagination>li>span:focus, .pagination>li>span:hover {
+    color: var(--mainColor);
+    outline:0;
+}
+
+.glyphicon {
+    color: var(--mainColor);        
+}
+
+.glyphicon:hover {
+    color: black;    
+    font-weight: bold;
+}
+
+.material-icons {
+	color: var(--mainColor);
+	font-size: 14px;
+}
+
+.material-icons:hover {
+    color: black;    
+    font-weight: bold;
+}
+
+.containerDataTitle {
+    font-family: Verdana,sans-serif;
+    font-size: 1.4em;
+}
+
+#containerData hr {
+	margin: 0px 0;	
+}
+
+.table-group {
+	background-color: #f9f9f9;
+}
+
+/* Form */
+#form-wrapper {
+    width: auto;
+    margin-top: 30px;
+    margin-left: auto;
+    margin-right: auto;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.form-control {
+	font-size: var(--mainFontSize);
+	border-left: 1px;
+	resize: horizontal;
+}
+
+.form-input-error {
+	border-top: 0; 
+	border-radius: inherit;
+} 
+
+.input-group {
+	margin-bottom: 10px;	
+	width: 750px;
+}
+
+.input-group-addon {
+	border-right: 1px solid #ccc;
+	font-size: var(--mainFontSize);
+    min-width: 350px;
+    text-align: left;
+}
+
+.input-group-addon.form-control {
+    border-left: 0px;   
+}
+
+.btn {
+	color: var(--mainButtonTXColor);
+	font-size: var(--mainFontSize);
+	background: var(--mainButtonBGColor);
+}
+.btn:focus {
+	color: white;
+}
+
+.btn-secondary-search {
+	float: right;
+	margin-left: 30px;
+}
+
+.btn-secondary {
+	float: right;
+	margin-left: 10px;
+}
+
+/* .btn-submit {
+    color: var(--mainButtonTXColor);
+    background: var(--mainButtonBGColor);
+    border-color: var(--mainButtonBorderColor);
+    float: right;
+} */
+
+.btn:hover {
+    color: var(--mainButtonTXColor);
+    border-color: var(--mainButtonBorderColor);
+    text-decoration: none;
+    background-color: var(--mainButtonBGColorDarker);
+}
+
+/* Create columns that floats next to each other for form select */
+.formColumn {
+    float: left;
+    margin-bottom: 20px;
+}
+
+.formColumn2 {
+    float: left;
+    width: 55px;
+    margin-top: 65px;
+}
+
+.formColumn2 button {
+    margin-bottom: 10px;
+    width: 33px
+}
+
+.formRow {
+    width: 750px;
+    margin: 0 auto;
+}
+
+/* Clear floats after the columns */
+.formRow:after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+legend {
+	font-size: var(--mainFontSize);
+	margin-bottom: 5px;
+}
+
+.modal-dialog-wide {
+    width: 1312px;	
+}
+
+/* File upload */
+.btn-file {
+    position: relative;
+    overflow: hidden;
+    text-shadow: 0px 0px 0px #ccc;
+}
+.btn-file input[type=file] {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 100%;
+    min-height: 100%;
+    font-size: 100px;
+    font-family: Verdana,sans-serif;
+    text-align: right;
+    filter: alpha(opacity=0);
+    opacity: 0;
+    outline: none;
+    background: white;   
+    cursor: inherit;
+    display: block;   
+}
+
+.btn-disabled  {
+	cursor: not-allowed;
+	box-shadow: none;
+    opacity: .65;
+}
+
+.btn-disabled:hover {
+    color: #fff;
+    background-color: #337ab7;
+    border-color: #2e6da4;
+}
+
+/* Application State Viewer */
+.redeployable {
+	text-align: right; 
+	color: var(--mainActiveColor); 
+	font-weight: bold;
+}
+
+.nonRedeployable {
+	text-align: right;
+	color: var(--mainNonActiveColor); 
+	font-weight: bold;
+}
+
+/* Deployment History Update Status */
+.statusSuccess {
+	color: var(--mainActiveColor); padding-right: 5px;	
+}
+
+.statusFailed {
+	color: var(--mainNonActiveColor); padding-right: 5px;	
+}
+
+/* User active, non active */
+.userActive {
+	color: var(--mainActiveColor); padding-right: 5px;	
+}
+
+.userNonActive {
+	color: var(--mainNonActiveColor); padding-right: 5px;	
+}
+
+/* Edit / Delete */
+.edit {
+	color: var(--mainActiveColor); padding-right: 5px;	
+}
+
+.delete {
+	color: var(--mainNonActiveColor); 
+}
+
+.delete:hover {
+	cursor: pointer;
+}
+
+.activate:hover {
+	cursor: pointer;
+}
+
+.clean {
+	padding-right: 5px;
+}
+.clean:hover {
+	cursor: pointer;
+}
+
+.stripped {
+background: repeating-linear-gradient(
+  -55deg,
+  white,
+  white 7px,
+  #ddd 7px,
+  #ddd 12px
+);	
+}
