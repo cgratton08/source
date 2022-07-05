@@ -1,174 +1,150 @@
-/* ********** Global variables ********** */
-:root {
-	/* maroon h: 0, s: 100%, l: 25%*/
-  --primary-color-h: 0;
-  --primary-color-s: 100%;
-  --primary-color-l: 25%;
+	private static final Logger logger = LoggerFactory.getLogger(BaseController.class);
 	
-  --mainFontColor: black;
-  --mainTextShadow: 2px 2px 3px #ccc;	
-  --mainFontSize: 10.5px;
-  --mainColor: hsl(var(--primary-color-h), var(--primary-color-s), var(--primary-color-l));
-  --mainActiveColor: green;
-  --mainNonActiveColor: firebrick;
-  
-  /* button */
-  --mainButtonTXColor: white;
-  --mainButtonBorderColor: white;
-  
-  --mainButtonBGColor: hsl(var(--primary-color-h), var(--primary-color-s), var(--primary-color-l));
-  --mainButtonBGColorDarker: hsl(var(--primary-color-h), var(--primary-color-s), calc(var(--primary-color-l) - 10%));
-
-}
-
-/* ********** template.jsp ********** */
-button:focus {outline:0;}
-
-a:focus {
-	color: white;
-}
-/* ********** Login Menu ********** */
-
-.login {
-    margin: auto;   
-    width: 99%;
-    padding: 150px 0;           
-}
-
-/* ********** Header Menu ********** */
-.header {
-    height:40px; 
-    width: 100%;    
-    color: white;
-    line-height: 25px;    
-    background-color: var(--mainColor);    
-    font-size: var(--mainFontSize);    	    
-}
-
-a.headerMenu:link { text-decoration: none;}
-.headerMenu.active {
-    background-color: white;
-    color: var(--mainColor);
-}
-
-/* ********** Side Menu ********** */
-.menu {			
-	float:left;
-	width: 255px;
-
-	margin-top: 11px;
-	left: 0px;
-    right: 0px;
-    bottom: 20px;
-	font-size: var(--mainFontSize);
-	overflow: auto;
-	white-space: nowrap;
+	@Autowired
+	private Environment env;
 	
-	color: var(--mainFontColor);
-    text-shadow: var(--mainTextShadow);
-}
+	@Autowired
+	public MenuService menuSrv;
 
-.menu button {
-	color: var(--mainFontColor);
-    text-shadow: var(--mainTextShadow);
-}
+	@Value("${appMode:OPERATIONAL}")
+	AppMode appMode;
 
-.menu ul li a:link, .menu a:visited {
-	text-decoration: none;
-	color: var(--mainColor);	
-}
-
-.menu ul li a:hover {
-    color: var(--mainColor);    
-    font-weight: bold;    
-    white-space: nowrap;
-}
-
-.menu ul {
-    padding-left: 18px;
-    margin-top: 5px;
-}
-
-
-/* ********** container ********** */
-.container {
-	float:left;
-	width:86%;
-	font-size: var(--mainFontSize);
+	@PostConstruct
+	public void init() {
+        logger.info("RMTOOLSMS Application started in {} mode", appMode);
+    }
 	
-	margin-top: 30px;
-    position:absolute;
-    top: 40px;        
-    right: 0px;
-    bottom: 20px;        
-    overflow-y: auto;  
-    
-	color: var(--mainFontColor);
-    text-shadow: var(--mainTextShadow);
-}
+	
+	/**
+	 * Return the home page and set the local base on the lang parameter
+	 * 
+	 * @param model
+	 * @return
+	 */
+	@RequestMapping(value= {"/", "/home"})
+    public ModelAndView home(ModelMap model) 
+	{
+		Locale locale = LocaleContextHolder.getLocale();
+		model.put("spinnerMessage", messageSource.getMessage("spinner.message", null, locale));
+		
+		if (locale.getLanguage().equals(new Locale("fr").getLanguage()))
+			model.put(DATA_TABLE_LANG, LANG_FR);
+		else
+			model.put(DATA_TABLE_LANG, LANG_EN);
+		
+		session.setAttribute("activeProfile", messageSource.getMessage("home.profile", new Object[]{env.getActiveProfiles()[0]}, LocaleContextHolder.getLocale()));
+		
+		// Use in header.jsp to display the user full name in welcome page, welcome message			
+		session.setAttribute("userName", activeSessionSrv.getActiveUserFullName());
+		
+		model.put(ENVIRONMENT_TYPE_ITEMS, envTypeSrvRep.findAll(Sort.by(Sort.Order.asc("envName").ignoreCase())));						
+				
+		logger.debug("Session ID: {}", session.getId());
+		Collections.list(session.getAttributeNames()).forEach(name -> logger.debug("{}: {}", name, session.getAttribute(name)));
+		
+		if (activeSessionSrv.getLoggedUser() == null) {
+			logger.error("{}", "Impossible to extract logged user. Redirecting to login page");
+			return new ModelAndView(LOGIN, model, HttpStatus.OK);
+		}
+		else if (menuSrv.isHelpDeskUser(activeSessionSrv.getLoggedUser()))
+			return new ModelAndView(HELPDESK_VIEW, model, HttpStatus.OK);			
+		else {
+			setActiveMenu(WEBSPHERE_ACTIVE, model);
+			return new ModelAndView(WEBSPHERE_VIEW, model, HttpStatus.OK);
+		}
+    }
+	
+	@RequestMapping(value= {"/helpdeskHome"})
+    public ModelAndView helpdeskHome(ModelMap model) {
+		
+		setLanguageAndMessage(model);
+		return new ModelAndView(HELPDESK_VIEW, model, HttpStatus.OK);
+	}
 
-/* ********** blockUI ********** */
+	@RequestMapping(value= {"/websphereHome"})
+    public ModelAndView websphereHome(ModelMap model) {
+		
+		setLanguageAndMessage(model);
+		model.put(ENVIRONMENT_TYPE_ITEMS, envTypeSrvRep.findAll(Sort.by(Sort.Order.asc("envName").ignoreCase())));						
+				
+		setActiveMenu(WEBSPHERE_ACTIVE, model);
+		return new ModelAndView(WEBSPHERE_VIEW, model, HttpStatus.OK);
+	}
+	
+	@RequestMapping(value= {"/jbossHome"})
+    public ModelAndView jbossHome(ModelMap model) {
+		
+		setLanguageAndMessage(model);
+		model.put(ENVIRONMENT_TYPE_ITEMS, envTypeSrvRep.findAll(Sort.by(Sort.Order.asc("envName").ignoreCase())));						
+		
+		setActiveMenu(JBOSS_ACTIVE, model);
+		return new ModelAndView(JBOSS_VIEW, model, HttpStatus.OK);
+	}
 
-.buttonload {
-    background-color: var(--mainColor);
-    border: none; /* Remove borders */
-    color: white; /* White text */
-    padding: 12px 24px; /* Some padding */
-    font-size: 16px; /* Set a font-size */
-}
+	@RequestMapping(value= {"/pegaHome"})
+    public ModelAndView pegaHome(ModelMap model) {
+		
+		setLanguageAndMessage(model);
+		model.put(ENVIRONMENT_TYPE_ITEMS, envTypeSrvRep.findAll(Sort.by(Sort.Order.asc("envName").ignoreCase())));						
+		
+		setActiveMenu(PEGA_ACTIVE, model);
+		return new ModelAndView(PEGA_VIEW, model, HttpStatus.OK);
+	}
 
-/* Add a right margin to each icon */
-i.fas {
-    margin-left: -12px;
-    margin-right: 8px;
-    font-size: 1.2em;
-}
+	@RequestMapping(value= {"/cmodHome"})
+    public ModelAndView cmodHome(ModelMap model) {
+		
+		setLanguageAndMessage(model);
+		model.put(ENVIRONMENT_TYPE_ITEMS, envTypeSrvRep.findAll(Sort.by(Sort.Order.asc("envName").ignoreCase())));						
+		
+		setActiveMenu(CMOD_ACTIVE, model);
+		return new ModelAndView(CMOD_VIEW, model, HttpStatus.OK);
+	}
 
-/* ********** TEXT-REFLECT CSS ********** */
-.text-reflect {
-    position: relative;
-}
-.text-reflect:before, .text-reflect:after {
-    display: block;
-    position: absolute;
-    bottom: -.81em; /* You should change this value to fit your font */
-    left: 0;
-    right: 0;
-}
-.text-reflect:before {
-    content: attr(data-text);
-    opacity: .3;
-
-    /* This is how the text is flipped vertically */
-    -webkit-transform: scaleY(-1);
-    -moz-transform: scaleY(-1);
-    -o-transform: scaleY(-1);
-    -ms-transform: scale(1,-1);    
-    transform: scateY(-1);
-}
-.text-reflect:after {
-    /* Fading using CSS gradient */
-    /* Don't forget to change the colors to your background color */
-    background: -webkit-gradient(linear, left top, left center, from(rgba(255,255,255,0)), to(rgb(255,255,255)));
-    background: -moz-linear-gradient(top, rgba(255,255,255,0), rgb(255,255,255));
-    background: -ms-linear-gradient(top, rgba(255,255,255,0), rgb(255,255,255) 52%);
-    background: linear-gradient(top, rgba(255,255,255,0), rgb(255,255,255));
-
-    /* I left out the `filter` property, because IE doesn't know `:before` and `:after` pseudo-elements anyway */
-    content: ' ';
-    height: 1em;
-}
-
-/* ********** User List Link CSS ********** */
-.userName a:link, .userName a:visited {
-	text-decoration: none;
-	color: var(--mainColor);	
-}
-
-.userName a:hover {
-    color: var(--mainColor);    
-    font-weight: bold;    
-    white-space: nowrap;
-    text-decoration: none;
-}
-
+	@RequestMapping(value= {"/customHome"})
+    public ModelAndView customHome(ModelMap model) {
+		
+		setLanguageAndMessage(model);
+		model.put(ENVIRONMENT_TYPE_ITEMS, envTypeSrvRep.findAll(Sort.by(Sort.Order.asc("envName").ignoreCase())));						
+		
+		setActiveMenu(CUSTOM_ACTIVE, model);
+		return new ModelAndView(CUSTOM_VIEW, model, HttpStatus.OK);
+	}		
+	
+	@RequestMapping("/login")
+    public String login(@ModelAttribute("loginForm") LoginForm loginForm, ModelMap model) 
+	{
+		// Check the operational mode of the application
+		if (appMode != null && appMode == AppMode.MAINTENANCE)
+			model.addAttribute("appMode", AppMode.MAINTENANCE);
+		else
+			model.addAttribute("appMode", AppMode.OPERATIONAL);
+			
+		session.setAttribute(APP_VERSION, versionHolder.getAppVersion());
+		return LOGIN;
+    }
+	
+	/**
+	 * In case of a server restart the UI need to refresh the entire page
+	 * and not just the [containerData] div.
+	 * 
+	 * @return true or false
+	 */
+	@GetMapping("/isLogin")
+	public ResponseEntity<Boolean> isLogin() {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		logger.debug("Is user {} authenticated: {}", ((UserDetails)auth.getPrincipal()).getUsername(), auth.isAuthenticated());
+		return new ResponseEntity<>(Boolean.valueOf(auth.isAuthenticated()), HttpStatus.OK);
+	}
+	
+	/**
+	 * A central point to set and display an error page with informations about the exception
+	 * This function will be mostly call from a Javascript function call that return an error.
+	 * 
+	 * @param model
+	 * @return
+	 */
+	@RequestMapping("/globalError")
+    public ModelAndView globalError(@RequestParam Map<String, String> model) {			
+		return processError(model);
+	}	
