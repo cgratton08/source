@@ -1,93 +1,303 @@
-<%@ page language="java" contentType="text/html; charset=ISO-8859-1" pageEncoding="ISO-8859-1"%>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
-<%@page import="com.intact.rmtools.utils.Context" %>
-<%@page import="com.intact.rmtools.utils.MenuAccess" %>
+/* ********** common.js ********** 
+ *
+ *  Regroup JS functions use by all Contexts
+ */
 
-<div id="containerData">
-<p class="containerDataTitle"><spring:message code="project.list.title"/></p>
-<hr>
+/**
+ * Set the status if a Deployment
+ * 
+ * @param form The form
+ * @param url  The Rest Service to call
+ * @param id   Id of the Entity
+ * 
+ * @returns Process to set the status of the Deployment in the DB context related table to success / failed
+ */
+function updateSingleDeploymentStatus(formSubmit, url, id) 
+{
+	$.when(isAuthenticated()).then
+	(
+		function(data, textStatus, jqXHR) 
+		{
+//			blockUI();
+			var formData = $(formSubmit).serializeArray();
 
-<spring:message code="project.list.name" var="prj_name"/>
-<spring:message code="project.list.server" var="server_name"/>
-<spring:message code="project.list.cluster" var="cluster_name"/>
-<spring:message code='project.details.title' var="prjDetailsTitle"/>
+			var elem = $('#status'+id);
+	
+			$.post(
+			{
+				url : url,
+				data : formData,
+				success : function(data) 
+				{
+					if (data.errorMessage) {
+						var errorElem = document.getElementById('error');
+						errorElem.className = 'error';
+						errorElem.innerHTML = data.errorMessage;
+						return;
+					}
+					
+					elem.text(data.deployment.status);					
+				},
+				error : function(xhr, text, error) { 
+					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
+				}
+			});
+				
+//			unblockUI();		
+		}
+	);
+}
 
-<table id="projectList" class="table table-striped table-bordered filterable">
-  <thead>
-    <tr>
-      <th scope="col" style="width: 25px;" class="no-sort"><spring:message code="global.edit"/></th>
-      <th scope="col" style="width: 25px;" class="no-sort"><spring:message code="global.delete"/></th>
-      <th scope="col"><input type="text" placeholder="${prj_name}"></th>
-      <th scope="col"><input type="text" placeholder="${server_name}"></th>
-      <th scope="col"><input type="text" placeholder="${cluster_name}"></th>
-    </tr>
-  </thead>
-  <tbody>
-<c:forEach var="project" items="${projectItems}">
-<tr>
-<c:choose>
-<c:when test="${menuSecurity[RMToolsContext.APPLICATION][MenuAccess.APPLICATION_READONLY_NONPROD] != true && menuSecurity[RMToolsContext.APPLICATION][MenuAccess.APPLICATION_READONLY_PROD] != true}">
-<td style="text-align: center; vertical-align: middle;"><a href="javascript: loadEntityToEdit('/editWebsphereProject', '${project.project}')"><span class="glyphicon glyphicon-pencil edit"></span></a></td>
-<td style="text-align: center; vertical-align: middle;"><a href="#" id="iconDeleteWebsphereProj" data-name="${project.name}" data-id="${project.project}" title="Delete Project"><span class="glyphicon glyphicon-remove delete"></span></a></td>
-</c:when>
-<c:otherwise>
-<td style="text-align: center; vertical-align: middle;"><span class="glyphicon glyphicon-ban-circle"></span></td>
-<td style="text-align: center; vertical-align: middle;"><span class="glyphicon glyphicon-ban-circle"></span></td>
-</c:otherwise>
-</c:choose>
-<td>${project.name} <a href="javascript: loadModalDetails('/displayWebsphereProjectDetails/${project.project}', '#detailsModal', '${prjDetailsTitle}', '#detailsModalEditAction', '/editWebsphereProject', '#detailsModalEditValue', '${project.project}')"><span class="glyphicon glyphicon-info-sign" style="font-size: 14px; float: right;"/></a></td>			
-<td>${project.appserver}</td>
-<td>${project.appcluster}</td>
-</tr>
-</c:forEach>
-  </tbody>
-  <tfoot>
-       <tr>
-           <th colspan="2"></th>
-           <th><input type="text" placeholder="${prj_name}"></th>
-           <th><input type="text" placeholder="${server_name}"></th>
-           <th><input type="text" placeholder="${cluster_name}"></th>
-       </tr>
-   </tfoot>
-</table>
+/**
+ * Set the status of a Queue Deployment
+ * 
+ * @param form The form
+ * @param url  The Rest Service to call
+ * @param id   Id of the Entity
+ * 
+ * @returns Process to set the status of the Deployment in the DB context related table to success / failed
+ */
+function updateQueueDeploymentStatus(formSubmit, url, id) 
+{
+	$.when(isAuthenticated()).then
+	(
+		function(data, textStatus, jqXHR) 
+		{
+//			blockUI();
+			var formData = $(formSubmit).serializeArray();
 
-<div class="modal fade" id="deleteWebsphereProjectModal" tabindex="-1" role="dialog" aria-labelledby="" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" role="document">
-    <div class="modal-content">
-      <div class="modal-header">        
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title" id="modalTitle"><spring:message code='project.delete.title'/></h4>
-      </div>
-      <div class="modal-body"> 
-        <spring:message code='project.delete.confirm'/>: <span style="font-weight:600;" id="websphereModalProjId"></span>       
-      </div>
-      <div class="modal-footer">
-        <button type="button" id="deleteWebsphereProjectCancel" class="btn btn-secondary" data-dismiss="modal"><spring:message code='button.cancel'/></button>
-        <button type="button" id="deleteWebsphereProjectProceed" class="btn btn-primary"><spring:message code='global.proceed'/></button>
-      </div>
-    </div>
-  </div>
-</div>
+			var elem = $('#status'+id);
+	
+			$.post(
+			{
+				url : url,
+				data : formData,
+				success : function(data) 
+				{
+					if (data.errorMessage) {
+						var errorElem = document.getElementById('error');
+						errorElem.className = 'error';
+						errorElem.innerHTML = data.errorMessage;
+						return;
+					}
+					
+					elem.text(data.deployment.status);					
+				},
+				error : function(xhr, text, error) { 
+					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
+				}
+			});
+				
+//			unblockUI();		
+		}
+	);
+}
 
- <div class="modal fade" id="detailsModal" tabindex="-1" role="dialog" aria-labelledby="" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" role="document" style="width: 700px;">
-    <div class="modal-content">
-      <div class="modal-header">        
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title" id="modalTitle" ></h4>
-      </div>
-      
-      	<div class="modal-body"></div>
-      
-      <div class="modal-footer">
-      	<input type="hidden" id="detailsModalEditAction" value="">
-      	<input type="hidden" id="detailsModalEditValue" value="">
-      	<button type="button" class="btn btn-secondary" data-dismiss="modal"><spring:message code='button.close'/></button>
-      	<button type="button" class="btn btn-secondary" data-dismiss="modal"  onclick="$('#detailsModal').modal('hide'); $('.modal-backdrop').remove(); loadEntityToEdit($('input#detailsModalEditAction').val(), $('input#detailsModalEditValue').val());"><spring:message code='button.edit'/></button>        
-      </div>
-    </div>
-  </div>
-</div> 
+// ----------------------------------------------
+/**
+ * loadValues
+ * 
+ * Load values related to a selection in a drop box
+ * 
+ * @param formSubmit
+ *            The form
+ * @param url
+ *            The Rest service to call
+ * 
+ * @returns The view to the Entities Object that was created
+ */
+function loadValues(formSubmit, url, orderColumn, freezeUI, userId) 
+{
+	$.when(isAuthenticated()).then
+	(
+		function(data, textStatus, jqXHR) 
+		{
+			var formData = $(formSubmit).serializeArray();
+			if (userId != undefined) {
+				formData.push({name : 'user', value : userId});
+			}
 
-</div>
+			if (freezeUI == true) {
+				blockUI();
+			}
+
+			$.post(
+			{
+				url : url,
+				data : formData,
+				success : function(data) 
+				{
+					$(".container").html($('#containerData', data));
+
+					$('table').DataTable({
+						"language" : {"url" : dataTableLang},
+   						"order" : [ orderColumn, 'asc' ],
+						"columnDefs" : [ { targets : 'no-sort', orderable : false } ],
+
+						initComplete: function () 
+						{
+							// To prevent a "No matching records found" in the fileUploadForm
+							if (this.hasClass("filterable")) 
+							{
+					            // Apply the search
+					            this.api().columns().every( function () 
+								{
+					                var that = this;	
+
+				                	$( 'input', this.header() ).on( 'keyup change clear', function () {
+				                    	if ( that.search() !== this.value ) {
+				                        	that.search( this.value ).draw();
+				                    	}
+				                 	});
+		
+				                	$( 'input', this.header() ).on( 'click thead th input', function (event) {
+										event.stopPropagation();
+				                 	});
+			 
+					                $( 'input', this.footer() ).on( 'keyup change clear', function () {
+					                    if ( that.search() !== this.value ) {
+					                        that.search( this.value ).draw();
+					                    }
+					                });
+					            });
+							}
+				        },
+					});
+				},
+				error : function(xhr, text, error) {
+					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
+				}
+			});
+
+			$(formSubmit + ':focus').blur();
+		}
+	);
+}
+
+// ----------------------------------------------
+function loadRolesToEdit(url, id, freezeUI) 
+{
+	$.when(isAuthenticated()).then
+	(
+		function(data, textStatus, jqXHR) 
+		{
+			var formData = [{name : 'id', value : id}];
+
+			blockUI();
+
+			$.post(
+			{
+				url : url,
+				data : formData,
+				success : function(data) {					
+					$(".container").html($('#containerData', data));
+				},
+				error : function(xhr, text, error) {
+					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
+				}
+			});
+			
+			unblockUI();
+		}
+	);
+}
+
+/**
+ * loadRoles
+ * 
+ * Load the roles of a particular user 
+ * 
+ * @param formSubmit
+ *            The form
+ * @param url
+ *            The Rest service to call
+ * @param id
+ *            The select elem origin of the request [userRolesFrom, userRolesTo]
+ * @param freezeUI
+ *            freeze or not the UI while seraching
+ * 
+ * @returns The view to the Entities Object that was created
+ */
+function loadRoles(formSubmit, url, id, freezeUI) 
+{
+	$.when(isAuthenticated()).then
+	(
+		function(data, textStatus, jqXHR) 
+		{
+			var formData = $(formSubmit).serializeArray();
+			formData.push({name : 'id', value : id});
+			
+			if (freezeUI == true) {
+				blockUI();
+			}
+
+			$.post(
+			{
+				url : url,
+				data : formData,
+				success : function(data) 
+				{
+					// Set button visibility
+					$("#btnUserFromDuplicate").prop("disabled", data.userFromUnknown);
+					$("#btnUserToReset").prop("disabled", data.userToUnknown);
+					$("#btnUserToAssign").prop("disabled", data.userToUnknown);
+					$("input:checkbox[name='userRolesTo']").prop("disabled", data.userToUnknown);
+					
+					// Clear the form roles checkbox
+					for (let i = 0; i < document.getElementsByName(id).length; i++) {
+						document.getElementsByName(id)[i].checked = false;						
+					}
+
+					// Set the roles
+					if (data.AssignRolesForm[id] != null)
+					{
+						for (const userRole of data.AssignRolesForm[id]) {
+							$('input:checkbox[name="' + id + '"][value="' + userRole.agroup + '"]').prop('checked',true);	
+						}
+					}
+				},
+				error : function(xhr, text, error) {
+					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
+				}
+			});
+
+			unblockUI();
+		}
+	);
+}
+
+function clearAllUserRolesTo() {
+	// Clear the form roles checkbox
+	for (let i = 0; i < document.getElementsByName("userRolesTo").length; i++) {
+		document.getElementsByName("userRolesTo")[i].checked = false;						
+	}
+}
+
+function clearUserToRoles() {
+	loadRoles('#usersUtilitiesForm', '/selectWebsphereUserRoles', 'userRolesTo', true);
+}
+
+function duplicateRoles() 
+{		
+	var selected = [];
+	$("input:checkbox[name='userRolesFrom']:checked").each(function () {
+    	selected.push($(this).attr("value"));
+    });
+		
+	let id = 'userRolesTo';
+	// Clear the form roles checkbox
+	for (let i = 0; i < document.getElementsByName('userRolesTo').length; i++) {
+		document.getElementsByName(id)[i].checked = false;						
+	}
+
+	// Set the roles
+	for (const userRole of selected) {
+		$('input:checkbox[name="userRolesTo"][value="' + userRole + '"]').prop('checked',true);						
+	}
+}
+
+function saveUserToRoles(formSubmit)
+{
+	var formData = $(formSubmit).serializeArray();
+	postCommand('/saveWebsphereUserRoles', formData, 1);
+}
