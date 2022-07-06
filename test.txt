@@ -1,108 +1,152 @@
-	/*
-	 * Display short version on one line
+package com.intact.rmtools.controller.websphere;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.intact.rmtools.base.BaseWebsphere;
+import com.intact.rmtools.dto.websphere.QueueDeploymentForm;
+import com.intact.rmtools.dto.websphere.SingleDeploymentForm;
+import com.intact.rmtools.service.repository.websphere.DeploymentSpecification;
+import com.intact.rmtools.service.websphere.DeploymentHistoryService;
+import com.intact.rmtools.service.websphere.EarLogService;
+
+@Controller
+public class DeploymentHistoryController extends BaseWebsphere {
+	private static final Logger logger = LoggerFactory.getLogger(DeploymentHistoryController.class);
+
+	private static final String PROJECT_ITEMS = "projectItems";
+	private static final String NODE_ITEMS = "nodeItems";
+	private static final String ENVIRONMENT_ITEMS = "environmentItems";
+	private static final String USER_ITEMS = "userItems";
+
+	private static final String SINGLE_DEPLOYMENT_ITEMS = "singleDeploymentItems";
+	private static final String SINGLE_DEPLOYMENT_VIEW = "listWebsphereSingleDeployment";
+
+	private static final String QUEUE_DEPLOYMENT_ITEMS = "queueDeploymentItems";
+	private static final String QUEUE_DEPLOYMENT_VIEW = "listWebsphereQueueDeployment";
+
+	private static final String SINGLE_DEPLOYMENT_DETAILS_ITEM = "singleDeploymentDetailsItem";
+	private static final String SINGLE_DEPLOYMENT_DETAILS_VIEW = "websphereSingleDeploymentDetails";
+
+	private static final String SINGLE_DEPLOYMENT_LOGS_ITEMS = "singleDeploymentLogsItems";
+	private static final String SINGLE_DEPLOYMENT_LOGS_VIEW = "websphereSingleDeploymentLogs";
+
+	private static final String QUEUE_DEPLOYMENT_DETAILS_ITEM = "queueDeploymentDetailsItem";
+	private static final String QUEUE_DEPLOYMENT_DETAILS_VIEW = "websphereQueueDeploymentDetails";
+
+	private static final String QUEUE_DEPLOYMENT_LOGS_ITEMS = "queueDeploymentLogsItems";
+	private static final String QUEUE_DEPLOYMENT_LOGS_VIEW = "websphereQueueDeploymentLogs";
+
+	private static final String QUEUE_ID = "queueId";
+	private static final String LOG_BD_PULLING_MAXTIME_MIN = "logBdPullingMaxTimeMin";
+
+	@Autowired
+	EarLogService earLogService;
+
+	@Autowired
+	public DeploymentHistoryService deplHistorySrv;
+
+	/**
+	 * Deployment History Single list and search
+	 * Default [from] date, is the beginning of the fist day of the actual month
+	 * Default [to] date, is the end of the first day of the next month
+	 * 
+	 * @param form
+	 * @param model
+	 * @return
 	 */
-    public String getShortVersion()
-    {
-    	// Artifact's name from the pom.xml file
+	@RequestMapping("/displayWebsphereSingleDeployment")
+	public ModelAndView displaySingleDeployment(SingleDeploymentForm form, ModelMap model) {
+		model.put(PROJECT_ITEMS, projSubsetSrvRep.findAll(Sort.by(Sort.Order.asc("name").ignoreCase())));
+		model.put(NODE_ITEMS, envSrvRep.findAll(Sort.by(Sort.Order.asc("label").ignoreCase())));
+		model.put(ENVIRONMENT_ITEMS, envTypeSrvRep.findAll(Sort.by(Sort.Order.asc("envName").ignoreCase())));
+		model.put(USER_ITEMS, userSrv.getActiveUsers());
 
-    	StringBuilder sb = new StringBuilder();
-    	sb.append(buildProperties.getName())
-    	.append(" Version: ")
-    	.append(buildProperties.getVersion())
-    	.append(" Last-build: ")
-    	.append(buildProperties.getTime())
-    	.append(" Build with java: ")
-    	.append(buildProperties.get(JAVA_VERSION));
-    	
-    	return sb.toString();
-    }
-    
-    /*
-     * Display short version on multiple lines
-     */
-    public String getShortVersionFormatted()
-    {
-    	// Artifact's name from the pom.xml file
+		model.put(SINGLE_DEPLOYMENT_ITEMS,
+				deplHistorySrv.getSingleDeploymentsHistory(DeploymentSpecification.retrieveDeployments(form)));
 
-    	StringBuilder sb = new StringBuilder();
-    	sb.append(buildProperties.getName())
-    	.append("\n\tVersion: ")
-    	.append(buildProperties.getVersion())
-    	.append("\n\tLast-build: ")
-    	.append(buildProperties.getTime())
-    	.append("\n\tBuild with java: ")
-    	.append(buildProperties.get(JAVA_VERSION));
+		return new ModelAndView(SINGLE_DEPLOYMENT_VIEW, model, HttpStatus.OK);
+	}
 
-    	return sb.toString();
-    }
-    
-	/*
-	 * Display short version on one line
+	/**
+	 * Display Single Deployment details
+	 * 
+	 * @param deploymentId
+	 * @param model
+	 * @return
 	 */
-    public Map<String,String> getShortVersionAsMap()
-    {
-    	// Artifact's name from the pom.xml file
+	@RequestMapping("/displayWebsphereSingleDeploymentDetails/{deploymentId:.+}")
+	public ModelAndView displaySingleDeploymentDetails(@PathVariable Long deploymentId, ModelMap model) {
+		model.put(SINGLE_DEPLOYMENT_DETAILS_ITEM, deplHistorySrv.findSingleDeployment(deploymentId));
+		return new ModelAndView(SINGLE_DEPLOYMENT_DETAILS_VIEW, model, HttpStatus.OK);
+	}
 
-    	Map<String,String> map = new HashMap<>();
-    	map.put("name", buildProperties.getName());
-    	map.put("version", buildProperties.getVersion());
-    	map.put("time", buildProperties.getTime().toString());
-    	map.put("javaVersion", buildProperties.get(JAVA_VERSION));
- 	
-    	return map;
-    }
+	/**
+	 * Display Single Deployment logs
+	 * 
+	 * @param deploymentId
+	 * @param model
+	 * @return
+	 */
+	@RequestMapping("/displayWebsphereSingleDeploymentLogs/{deploymentId:.+}")
+	public ModelAndView displaySingleDeploymentLogs(@PathVariable Long deploymentId, ModelMap model) {
+		model.put(LOG_BD_PULLING_MAXTIME_MIN, getPropertyAsInt("LOG_BD_PULLING_MAXTIME_MIN", 70));
+		model.put(SINGLE_DEPLOYMENT_LOGS_ITEMS, earLogService.getLogFromDB(deploymentId));
+		return new ModelAndView(SINGLE_DEPLOYMENT_LOGS_VIEW, model, HttpStatus.OK);
+	}
 
-    
-    /*
-     * Display long version on one line
-     */
-    public String getLongVersion()
-    {
-    	// Artifact's name from the pom.xml file
+	/**
+	 * Deployment History Queue list and search
+	 * 
+	 * @param form
+	 * @param model
+	 * @return
+	 */
+	@RequestMapping("/displayWebsphereQueueDeployment")
+	public ModelAndView displayQueueDeployment(QueueDeploymentForm form, ModelMap model) {
+		model.put(ENVIRONMENT_ITEMS, envTypeSrvRep.findAll(Sort.by(Sort.Order.asc("envName").ignoreCase())));
+		model.put(USER_ITEMS, userSrv.getActiveUsers());
 
-    	StringBuilder sb = new StringBuilder();
-    	sb.append(buildProperties.getName())
-    	.append(" Version: ")
-    	.append(buildProperties.getVersion())
-    	.append(" Last-build: ")
-    	.append(buildProperties.getTime())  	
-    	.append(" Artifact: ")
-    	.append(buildProperties.getArtifact())
-    	.append(" Group: ")
-    	.append(buildProperties.getGroup())
-    	.append(" Build with java: ")
-    	.append(buildProperties.get(JAVA_VERSION));
-	    	    	
-    	return sb.toString();
-    } 
-    
-    /*
-     * Display long version on multiple lines
-     */
-    public String getLongVersionFormatted()
-    {
-    	// Artifact's name from the pom.xml file
+		model.put(QUEUE_DEPLOYMENT_ITEMS,
+				deplHistorySrv.getQueueDeploymentsHistory(DeploymentSpecification.retrieveQueueDeployments(form)));
 
-    	StringBuilder sb = new StringBuilder();
-    	sb.append(buildProperties.getName())
-    	.append("\n\tVersion: ")
-    	.append(buildProperties.getVersion())
-    	.append("\n\tLast-build: ")
-    	.append(buildProperties.getTime())  	
-    	.append("\n\tArtifact: ")
-    	.append(buildProperties.getArtifact())
-    	.append("\n\tGroup: ")
-    	.append(buildProperties.getGroup())
-    	.append("\n\tBuild with java: ")
-    	.append(buildProperties.get(JAVA_VERSION));
-    	
-    	return sb.toString();
-    } 
+		return new ModelAndView(QUEUE_DEPLOYMENT_VIEW, model, HttpStatus.OK);
+	}
 
-    public void getPrintVersion() {
-    	logger.info("Name: {}\nVersion: {}\nLast build: {}\nArtifact: {}\nGroup: {}", buildProperties.getName(), buildProperties.getVersion(), buildProperties.getTime(), buildProperties.getArtifact(), buildProperties.getGroup());
-    } 
-    
-    public void getPrintVersionFormatted() {
-    	logger.info("Name: {}\n\tVersion: {}\n\tLast build: {}\n\tArtifact: {}\n\tGroup: {}", buildProperties.getName(), buildProperties.getVersion(), buildProperties.getTime(), buildProperties.getArtifact(), buildProperties.getGroup());
-    } 
+	/**
+	 * Display Queue details
+	 * 
+	 * @param queueId
+	 * @param model
+	 * @return
+	 */
+	@RequestMapping("/displayWebsphereQueueDeploymentDetails/{queueId:.+}")
+	public ModelAndView displayQueueDeploymentDetails(@PathVariable Long queueId, ModelMap model) {
+		model.put(QUEUE_DEPLOYMENT_DETAILS_ITEM, deplHistorySrv.getQueueAndQueueDeployments(queueId));
+		return new ModelAndView(QUEUE_DEPLOYMENT_DETAILS_VIEW, model, HttpStatus.OK);
+	}
+
+	/**
+	 * Display Queue logs
+	 * 
+	 * @param queueId
+	 * @param model
+	 * @return
+	 */
+	@RequestMapping("/displayWebsphereQueueDeploymentLogs/{queueId:.+}")
+	public ModelAndView displayQueueDeploymentLogs(@PathVariable Long queueId, ModelMap model) {
+		model.put(QUEUE_ID, queueId);
+		model.put(LOG_BD_PULLING_MAXTIME_MIN, getPropertyAsInt("LOG_BD_PULLING_MAXTIME_MIN", 70));
+		model.put(QUEUE_DEPLOYMENT_LOGS_ITEMS, earLogService.getQueueDeploymentlogFromDB(queueId));
+		return new ModelAndView(QUEUE_DEPLOYMENT_LOGS_VIEW, model, HttpStatus.OK);
+	}
+
+}
