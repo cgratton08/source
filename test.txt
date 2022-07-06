@@ -1,181 +1,92 @@
-/* ********** common.js ********** 
+/* ********** container.js ********** */
+
+/**
+ * isAuthenticated
  *
- *  Regroup JS functions use by all Contexts
- */
-
-/**
- * Set the status if a Deployment
+ * Validate the user is authenticated to RMToolsMS.
+ * Most JS function will use this function to validate user access
  * 
- * @param form The form
- * @param url  The Rest Service to call
- * @param id   Id of the Entity
+ * In case of a server restart the user need to login again.
+ * The UI need to refresh the entire page and not just the [containerData] div.
  * 
- * @returns Process to set the status of the Deployment in the DB context related table to success / failed
+ * @returns true or false
  */
-function updateSingleDeploymentStatus(formSubmit, url, id) 
+function isAuthenticated() 
 {
-	$.when(isAuthenticated()).then
-	(
-		function(data, textStatus, jqXHR) 
-		{
-//			blockUI();
-			var formData = $(formSubmit).serializeArray();
+	var authenticated = false;
 
-			var elem = $('#status'+id);
-	
-			$.post(
-			{
-				url : url,
-				data : formData,
-				success : function(data) 
-				{
-					if (data.errorMessage) {
-						var errorElem = document.getElementById('error');
-						errorElem.className = 'error';
-						errorElem.innerHTML = data.errorMessage;
-						return;
-					}
-					
-					elem.text(data.deployment.status);					
-				},
-				error : function(xhr, text, error) { 
-					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
-				}
-			});
-				
-//			unblockUI();		
+	$.ajax(
+	{
+		async : true,
+		type : 'GET',
+		url : '/isLogin',
+		success : function(data) 
+		{
+			if (data == true) {
+				authenticated = true;
+			} else {
+				authenticated = false;
+				$("html").html(data);
+			}
 		}
-	);
+	});
+
+	return authenticated;
 }
 
 /**
- * Set the status of a Queue Deployment
+ * loadListToTarget
  * 
- * @param form The form
- * @param url  The Rest Service to call
- * @param id   Id of the Entity
- * 
- * @returns Process to set the status of the Deployment in the DB context related table to success / failed
- */
-function updateQueueDeploymentStatus(formSubmit, url, id) 
-{
-	$.when(isAuthenticated()).then
-	(
-		function(data, textStatus, jqXHR) 
-		{
-//			blockUI();
-			var formData = $(formSubmit).serializeArray();
-
-			var elem = $('#status'+id);
-	
-			$.post(
-			{
-				url : url,
-				data : formData,
-				success : function(data) 
-				{
-					if (data.errorMessage) {
-						var errorElem = document.getElementById('error');
-						errorElem.className = 'error';
-						errorElem.innerHTML = data.errorMessage;
-						return;
-					}
-					
-					elem.text(data.deployment.status);					
-				},
-				error : function(xhr, text, error) { 
-					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
-				}
-			});
-				
-//			unblockUI();		
-		}
-	);
-}
-
-// ----------------------------------------------
-/**
- * loadValues
- * 
- * Load values related to a selection in a drop box
+ * Fill a list(form select) base on the value of an (form input) value
  * 
  * @param formSubmit
- *            The form
  * @param url
- *            The Rest service to call
- * 
- * @returns The view to the Entities Object that was created
+ * @param target
+ * @param pValue
+ * @param pText
+ * @returns
  */
-function loadValues(formSubmit, url, orderColumn, freezeUI, userId) 
+function loadListToTarget(formSubmit, url, target, pValue, pText)
 {
 	$.when(isAuthenticated()).then
 	(
 		function(data, textStatus, jqXHR) 
 		{
 			var formData = $(formSubmit).serializeArray();
-			if (userId != undefined) {
-				formData.push({name : 'user', value : userId});
-			}
 
-			if (freezeUI == true) {
-				blockUI();
-			}
-
+			blockUI();
+			
 			$.post(
 			{
 				url : url,
 				data : formData,
 				success : function(data) 
 				{
-					$(".container").html($('#containerData', data));
-
-					$('table').DataTable({
-						"language" : {"url" : dataTableLang},
-   						"order" : [ orderColumn, 'asc' ],
-						"columnDefs" : [ { targets : 'no-sort', orderable : false } ],
-
-						initComplete: function () 
-						{
-							// To prevent a "No matching records found" in the fileUploadForm
-							if (this.hasClass("filterable")) 
-							{
-					            // Apply the search
-					            this.api().columns().every( function () 
-								{
-					                var that = this;	
-
-				                	$( 'input', this.header() ).on( 'keyup change clear', function () {
-				                    	if ( that.search() !== this.value ) {
-				                        	that.search( this.value ).draw();
-				                    	}
-				                 	});
-		
-				                	$( 'input', this.header() ).on( 'click thead th input', function (event) {
-										event.stopPropagation();
-				                 	});
-			 
-					                $( 'input', this.footer() ).on( 'keyup change clear', function () {
-					                    if ( that.search() !== this.value ) {
-					                        that.search( this.value ).draw();
-					                    }
-					                });
-					            });
-							}
-				        },
-					});
+					$(target + " option:gt(0)").remove();
+					
+					$.each(data, function(key, value) {
+						$(target).append($("<option></option>").attr("value",value[pValue]).text(value[pText]));
+					})						
 				},
 				error : function(xhr, text, error) {
 					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
 				}
-			});
-
-			$(formSubmit + ':focus').blur();
+			});	
+			
+			unblockUI();
 		}
 	);
 }
 
-// ----------------------------------------------
-function loadRolesToEdit(url, id, freezeUI) 
+/**
+ * load an Entity for edition
+ * 
+ * @param url The Rest Service to call
+ * @param id  Id of the Entity
+ * 
+ * @returns The view to the Entities Object that was created
+ */
+function loadEntityToEdit(url, id) 
 {
 	$.when(isAuthenticated()).then
 	(
@@ -189,7 +100,7 @@ function loadRolesToEdit(url, id, freezeUI)
 			{
 				url : url,
 				data : formData,
-				success : function(data) {					
+				success : function(data) {
 					$(".container").html($('#containerData', data));
 				},
 				error : function(xhr, text, error) {
@@ -202,102 +113,1006 @@ function loadRolesToEdit(url, id, freezeUI)
 	);
 }
 
-/**
- * loadRoles
- * 
- * Load the roles of a particular user 
- * 
- * @param formSubmit
- *            The form
- * @param url
- *            The Rest service to call
- * @param id
- *            The select elem origin of the request [userRolesFrom, userRolesTo]
- * @param freezeUI
- *            freeze or not the UI while seraching
- * 
- * @returns The view to the Entities Object that was created
- */
-function loadRoles(formSubmit, url, id, freezeUI) 
+function postUrlNoForm(url, orderColumn) 
+{
+	$.when(isAuthenticated()).then
+	(
+		function(data, textStatus, jqXHR) 
+		{
+			if (orderColumn == undefined) {
+				orderColumn = 0;
+			}
+			
+			$.post(
+			{
+				url : url,
+				success : function(data) 
+				{
+					$(".container").html($('#containerData', data));
+					
+					$('table').DataTable({
+						"language" : {"url" : dataTableLang},
+						"order" : [ orderColumn, 'asc' ],
+						"columnDefs" : [ { targets : 'no-sort', orderable : false } ]
+					});	
+				},
+				error : function(xhr, text, error) {
+					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
+				}
+			});
+		}
+	);
+}
+
+function postUrl(formSubmit, url, orderDirection, orderColumn, freezeUI) 
 {
 	$.when(isAuthenticated()).then
 	(
 		function(data, textStatus, jqXHR) 
 		{
 			var formData = $(formSubmit).serializeArray();
-			formData.push({name : 'id', value : id});
+
+			if (orderDirection == undefined) {
+				orderDirection = 'asc';
+			}
+			
+			if (orderColumn == undefined) {
+				orderColumn = 0;
+			}
 			
 			if (freezeUI == true) {
 				blockUI();
 			}
-
+			
 			$.post(
 			{
 				url : url,
 				data : formData,
 				success : function(data) 
 				{
-					// Set button visibility
-					$("#btnUserFromDuplicate").prop("disabled", data.userFromUnknown);
-					$("#btnUserToReset").prop("disabled", data.userToUnknown);
-					$("#btnUserToAssign").prop("disabled", data.userToUnknown);
-					$("input:checkbox[name='userRolesTo']").prop("disabled", data.userToUnknown);
+					$(".container").html($('#containerData', data));
 					
-					// Clear the form roles checkbox
-					for (let i = 0; i < document.getElementsByName(id).length; i++) {
-						document.getElementsByName(id)[i].checked = false;						
-					}
+					$('table').DataTable({
+						"language" : {"url" : dataTableLang},
+						"order": [ orderColumn, orderDirection ],
+						"columnDefs" : [ {targets : 'no-sort', orderable : false }],
 
-					// Set the roles
-					if (data.AssignRolesForm[id] != null)
-					{
-						for (const userRole of data.AssignRolesForm[id]) {
-							$('input:checkbox[name="' + id + '"][value="' + userRole.agroup + '"]').prop('checked',true);	
-						}
-					}
+						initComplete: function () 
+						{
+							// To prevent a "No matching records found" in the fileUploadForm
+							if (this.hasClass("filterable")) 
+							{
+						        // Apply the search
+						        this.api().columns().every( function () 
+								{
+						            var that = this;
+
+				                	$( 'input', this.header() ).on( 'keyup change clear', function () {
+				                    	if ( that.search() !== this.value ) {
+				                        	that.search( this.value ).draw();
+				                    	}
+				                 	});
+		
+				                	$( 'input', this.header() ).on( 'click thead th input', function (event) {
+										event.stopPropagation();
+				                 	});
+					 
+						            $( 'input', this.footer() ).on( 'keyup change clear', function () {
+						                if ( that.search() !== this.value ) {
+						                    that.search( this.value ).draw();
+						                }
+						            });
+						        });
+							}
+					     },
+					});					
 				},
 				error : function(xhr, text, error) {
 					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
 				}
 			});
+		}
+	);
+}
 
+/**
+ * saveEntity
+ * 
+ * Persist the Entity receive in parameter
+ * 
+ * @param formSubmit The Spring Form
+ * @param url The Rest Service to call to persist the Form
+ * @param mode The mode [Add | Edit] or the submitted form
+ *
+ * @returns
+ */
+function saveEntity(formSubmit, url, mode, orderColumn) 
+{
+	var formData = $(formSubmit).serializeArray();
+	formData.push({name : 'mode', value : mode});
+
+	if (orderColumn === undefined) {
+		orderColumn = 1;
+	}
+	
+	postCommand(url, formData, orderColumn);
+}
+
+function saveCopyEntity(formSubmit, url, table) 
+{
+	var links = [];
+	$("#tblLinkedProjects tbody tr").each(function() {
+		links.push($(this).attr('id'));
+	});
+
+	var formData = $(formSubmit).serializeArray();
+	formData.push({name : 'links', value : links});
+	
+	postCommand(url, formData, 1);
+}
+
+/**
+ * Acivate Deactivate a user
+ * 
+ * @param url  The Rest Service to call
+ * @param form If present the form
+ * @param id   Id of the Entity
+ * 
+ * @returns Process to set the active status of the user in the DB User_Lists table to true / false 
+ */
+function activateDeactivateUser(url, id) 
+{
+	$.when(isAuthenticated()).then
+	(
+		function(data, textStatus, jqXHR) 
+		{
+//			blockUI();
+			var formData = [{name : 'id', value : id}];			
+			var elemIcon = $('#activeIcon'+id);
+			var elemLink = $('#activeLink'+id);
+	
+			$.post(
+			{
+				url : url,
+				data : formData,
+				success : function(data) 
+				{
+					if (data.errorMessage) {
+						var errorElem = document.getElementById('error');
+						errorElem.className = 'error';
+						errorElem.innerHTML = data.errorMessage;
+						return;
+					}
+					
+					if($(elemIcon).hasClass("glyphicon-user"))
+					{
+						$(elemIcon).removeClass("glyphicon-user");
+						$(elemIcon).addClass("glyphicon-remove");
+						$(elemIcon).css("color", "maroon");
+						$(elemLink).css("color", "maroon");
+					} else {
+						$(elemIcon).removeClass("glyphicon-remove");
+						$(elemIcon).addClass("glyphicon-user");
+						$(elemIcon).css("color", "green");
+						$(elemLink).css("color", "green");	
+					}
+										
+				},
+				error : function(xhr, text, error) { 
+					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
+				}
+			});
+				
+//			unblockUI();		
+		}
+	);
+}
+
+
+function deleteEntity(url, formSubmit, id, orderColumn) 
+{
+	var formData = [];
+	if (formSubmit === null) {		
+		formData.push({name : 'id', value : id});
+		postCommand(url, formData, orderColumn);
+	} else {
+		formData = $(formSubmit).serializeArray();
+		formData.push({name : 'id', value : id});
+		postCommand(url, formData, orderColumn);
+	}
+}
+
+function postCommand(url, formData, orderColumn) 
+{
+	$.when(isAuthenticated()).then
+	(
+		function(data, textStatus, jqXHR) 
+		{
+			blockUI();
+	
+			$.post(
+			{
+				url : url,
+				data : formData,
+				success : function(data) 
+				{
+					$(".container").html($('#containerData', data));
+	
+					$('table').DataTable({
+						"language" : {"url" : dataTableLang},
+						"order" : [ orderColumn, 'asc' ],
+						"columnDefs" : [ { targets : 'no-sort', orderable : false } ],
+
+						initComplete: function () 
+					 	{
+							// To prevent a "No matching records found" in the fileUploadForm
+							if (this.hasClass("filterable")) 
+							{
+				            	// Apply the search
+				            	this.api().columns().every( function () 
+								{
+				                	var that = this;
+	
+				                	$( 'input', this.header() ).on( 'keyup change clear', function () {
+				                    	if ( that.search() !== this.value ) {
+				                        	that.search( this.value ).draw();
+				                    	}
+				                 	});
+		
+				                	$( 'input', this.header() ).on( 'click thead th input', function (event) {
+										event.stopPropagation();
+				                 	});
+	
+									$( 'input', this.footer() ).on( 'keyup change clear', function () {
+				                    	if ( that.search() !== this.value ) {
+				                        	that.search( this.value ).draw();
+				                    	}
+				                 	});
+				            	});
+							}
+			        	},
+					});	
+				},
+				error : function(xhr, text, error) { 
+					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
+				}
+			});
+				
+			unblockUI();		
+		}
+	);
+}
+
+/**
+ * Use by EARs Websphere Single Deployment Details
+ * 
+ * @param url
+ * @param target
+ * @param title
+ * @returns
+ */
+function loadModalDetails(url, target, title, editActionTarget, editActionValue, editIdTarget, editIdValue) 
+{
+	$.when(isAuthenticated()).then
+	(
+		function(data, textStatus, jqXHR) 
+		{
+			blockUI();
+			
+			$.post(
+			{
+				url : url,
+				success : function(data) 
+				{
+					$(target).find('.modal-body').html($('#containerData', data));
+					$(target).find('#modalTitle').html(title);
+					$(target).find(editActionTarget).val(editActionValue);
+					$(target).find(editIdTarget).val(editIdValue);
+					
+					if (typeof editIdValue === "undefined") {
+						$('#detailsModalEditButton').hide();
+					} else {
+						$('#detailsModalEditButton').show();
+					}
+					$(target).modal("show");
+				},
+				error : function(xhr, text, error) { 
+					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
+				}
+			});
+			
 			unblockUI();
 		}
 	);
 }
 
-function clearAllUserRolesTo() {
-	// Clear the form roles checkbox
-	for (let i = 0; i < document.getElementsByName("userRolesTo").length; i++) {
-		document.getElementsByName("userRolesTo")[i].checked = false;						
-	}
+function loadModal(formSubmit, url, target, param, title) 
+{
+	$.when(isAuthenticated()).then
+	(
+		function(data, textStatus, jqXHR) 
+		{
+			var formData = $(formSubmit).serializeArray();
+			formData.push({name : 'param', value : param});
+	
+			blockUI();
+
+			$.post(
+			{
+				url : url,
+				data : formData,
+				success : function(data)
+				{
+					$(target).find('.modal-body').html($('#containerData', data));
+					$(target).find('#modalTitle').html(title);
+					$(target).modal("show");
+				},
+				error : function(xhr, text, error) { 
+					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
+				}
+			});
+			
+			unblockUI();
+		}
+	);
 }
 
-function clearUserToRoles() {
-	loadRoles('#usersUtilitiesForm', '/selectWebsphereUserRoles', 'userRolesTo', true);
-}
-
-function duplicateRoles() 
-{		
-	var selected = [];
-	$("input:checkbox[name='userRolesFrom']:checked").each(function () {
-    	selected.push($(this).attr("value"));
-    });
-		
-	let id = 'userRolesTo';
-	// Clear the form roles checkbox
-	for (let i = 0; i < document.getElementsByName('userRolesTo').length; i++) {
-		document.getElementsByName(id)[i].checked = false;						
-	}
-
-	// Set the roles
-	for (const userRole of selected) {
-		$('input:checkbox[name="userRolesTo"][value="' + userRole + '"]').prop('checked',true);						
-	}
-}
-
-function saveUserToRoles(formSubmit)
+function saveModal(formSubmit, url, orderColumn) 
 {
 	var formData = $(formSubmit).serializeArray();
-	postCommand('/saveWebsphereUserRoles', formData, 1);
+	postCommand(url, formData, orderColumn);
+	$('.modal-backdrop').remove();
+}
+
+/**
+ * Call from Websphere - Management - DBManager - Project - Delete icon
+ * (listProcessingMapEdit.jsp)
+ * 
+ */
+var deleteWebsphereProject = function(callback)
+{
+	var dataId = '';
+	var dataName = '';
+	
+	$(document).on('click', '#iconDeleteWebsphereProj', function() {
+		dataId = $(this).data('id');
+		dataName = $(this).data('name')
+		$("#websphereModalProjId").text(dataName);
+		$("#deleteWebsphereProjectModal").modal('show');
+	});
+
+	$(document).on('click', '#deleteWebsphereProjectProceed', function() {
+		callback(dataId);
+		$("#deleteWebsphereProjectModal").modal('hide');
+	});
+
+	$(document).on('click', '#deleteWebsphereProjectCancel', function() {
+		$("#deleteWebsphereProjectModal").modal('hide');
+	});
+};
+
+deleteWebsphereProject(function(id) 
+{
+	var formData = [{name : 'id', value : id}];
+	postCommand('/deleteWebsphereProject', formData, 2);
+	$('.modal-backdrop').remove();
+});
+
+/**
+ * Call from Websphere - Management - DBManager - User - Delete icon
+ * 
+ */
+var deleteWebsphereUser = function(callback)
+{
+	var dataId = '';
+	var dataName = '';
+	
+	$(document).on('click', '#iconDeleteWebsphereUser', function() {
+		dataId = $(this).data('id');
+		dataName = $(this).data('name')
+		$("#websphereModalUserId").text(dataName);
+		$("#deleteWebsphereUserModal").modal('show');
+	});
+
+	$(document).on('click', '#deleteWebsphereUserProceed', function() {
+		callback(dataId);
+		$("#deleteWebsphereUserModal").modal('hide');
+	});
+
+	$(document).on('click', '#deleteWebsphereUserCancel', function() {
+		$("#deleteWebsphereUserModal").modal('hide');
+	});
+};
+
+deleteWebsphereUser(function(id) 
+{
+	var formData = [{name : 'id', value : id}];
+	postCommand('/deleteWebsphereUser', formData, 1);
+	$('.modal-backdrop').remove();
+});
+
+/**
+ * Call from Websphere - Management - DBManager - Processing - ProcessingMapEdit
+ * (listProcessingMapEdit.jsp)
+ * 
+ */
+var deploymentProcessingActions = function(callback)
+{
+	var dataKey = '';
+	var dataId = '';
+	var dataAction = '';
+	
+	$(document).on('click', '#btnCleanQueuedDeployments', function() 
+	{
+		dataKey = $(this).data('key');
+		dataId = $(this).data('id');
+		dataAction = $(this).data('action');
+		
+		var dataMsg = $(this).data('msg');
+		var dataTitle = $(this).data('title');
+		$(".modal-title #deploymentProcessingTitle").html(dataTitle);
+		$(".modal-body #deploymentProcessingMsg").html(dataMsg + " <b>" + dataKey + "</b>");
+		$("#deploymentProcessingModal").modal('show');
+	});
+
+	$(document).on('click', '#btnCancelQueuedDeployment', function()
+	{
+		dataKey = $(this).data('key');
+		dataId = $(this).data('id');
+		dataAction = $(this).data('action');
+
+		var dataMsg = $(this).data('msg');
+		var dataTitle = $(this).data('title');
+		$(".modal-title #deploymentProcessingTitle").html(dataTitle);
+		$(".modal-body #deploymentProcessingMsg").html(dataMsg + " <b>" + dataId + "</b>");
+		$("#deploymentProcessingModal").modal('show');
+	});
+
+	$(document).on('click', '#btnActivateQueuedDeployment', function()
+	{
+		dataKey = $(this).data('key');
+		dataId = $(this).data('id');
+		dataAction = $(this).data('action');
+
+		var dataMsg = $(this).data('msg');
+		var dataTitle = $(this).data('title');
+		$(".modal-title #deploymentProcessingTitle").html(dataTitle);
+		$(".modal-body #deploymentProcessingMsg").html(dataMsg + " <b>" + dataId + "</b>");
+		$("#deploymentProcessingModal").modal('show');
+	});
+
+	$(document).on('click', '#deploymentProcessingProceedButton', function() {
+		callback(dataKey, dataId, dataAction);
+		$("#deploymentProcessingModal").modal('hide');
+	});
+
+	$(document).on('click', '#deploymentProcessingCancelButton', function() {
+		$("#deploymentProcessingModal").modal('hide');
+	});
+};
+
+deploymentProcessingActions( function(key, id, action)
+{
+	var formData = [{name : 'key', value : key}, {name : 'id', value : id}, {name : 'action', value : action}];
+	postCommand('/websphereDeploymentProcessingAction', formData, 2);
+	$('.modal-backdrop').remove();
+});
+
+/**
+ * Adjust Websphere Deployment Mapping, Virtual Hosts and Roles, modal submit
+ * button
+ * 
+ * @param e
+ * @returns
+ */
+$(document).on('shown.bs.tab', function(e) 
+{
+	var target = $(e.target).attr("href") // activated tab
+	
+	if (target == '#roles') {
+		$('#websphereDeploymentMappingsSubmitButton').attr('onclick', "saveModal('#deploymentServerForm2', '/saveWebsphereRolesMappings')");
+	} else if (target == '#virtualHost') {
+		$('#websphereDeploymentMappingsSubmitButton').attr('onclick', "saveModal('#deploymentServerForm2', '/saveWebsphereVirtualHostMappings')");
+	}
+});
+
+// ----------------------------------------------
+/**
+ * loadVersionToTarget
+ * 
+ * Specific to [Management / DB Manager / Updater / Version) to load the EAR and
+ * Prop file current version
+ * 
+ * @param formSubmit
+ * @param url
+ * @param targetEar
+ * @param targetProp
+ * @returns
+ */
+function loadVersionToTarget(formSubmit, url, targetEar, targetProp)
+ {
+	$.when(isAuthenticated()).then
+	(
+		function(data, textStatus, jqXHR) 
+		{
+			var formData = $(formSubmit).serializeArray();
+
+			blockUI();
+			
+			$.post(
+			{
+				url : url,
+				data : formData,
+				success : function(data) {
+					$(targetEar).val(data['versionEarFile']);
+					$(targetProp).val(data['versionPropFile']);
+				},
+				error : function(xhr, text, error) {
+					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
+				}
+			});
+			
+			unblockUI();
+		}
+	);
+}
+
+/**
+ * resetVersionInfoForm
+ * 
+ * Use by (Update version info) reset the form elements
+ * 
+ * @param formSubmit
+ * @param all
+ * @returns
+ */
+function resetVersionInfoForm(formSubmit, all) 
+{
+	if (all) {
+		$(formSubmit + " #versionProject option:gt(0)").remove();
+		$(formSubmit + " #node option:gt(0)").remove();
+		$(formSubmit + " #versionEarFile").val('');
+		$(formSubmit + " #versionPropFile").val('');
+	} else {
+		$(formSubmit + " #node option:gt(0)").remove();
+		$(formSubmit + " #versionEarFile").val('');
+		$(formSubmit + " #versionPropFile").val('');
+	}
+}
+
+
+/**
+ * transferSelectItems
+ * 
+ * Transfer selected options from one side to the other in both direction
+ * 
+ * @param from
+ * @param to
+ * @param all
+ * @returns
+ */
+function transferSelectItems(from, to, all) 
+{
+	var items = [];
+
+	if (all) 
+	{
+		items = $(from + ' option').each(function() {
+			items.push($(this));
+		});
+
+		$(from + ' option').remove();
+
+		items.each(function() {
+			$(to).append($("<option></option>").attr("value", this.value).text(this.text));
+		});
+	} else {
+		items = $(from + " option:selected");
+
+		items.each(function() {
+			$(from + " option[value='" + this.value + "']").remove();
+			$(to).append($("<option></option>").attr("value", this.value).text(this.text));
+		});
+	}
+}
+
+// ---------------------------------------------- UTILITY
+/**
+ * selectAllOption
+ * 
+ * Before submitting the form select all the option form the select input tag
+ * 
+ * @param formSubmit
+ * @param selectId
+ * @returns
+ */
+function selectAllOption(formSubmit, selectId) 
+{
+	$(formSubmit + ':focus').blur();
+	$(selectId + ' option').prop('selected', true);
+}
+
+/**
+ * changeClass
+ * 
+ * Change the icon when the active selection is selected in (Add user to
+ * RMTools)
+ * 
+ * @param value
+ * @returns
+ */
+function changeClass(icondId, value) 
+{
+	switch (value) {
+	case "y":
+	case "Y":
+	case "true":
+	case "True":
+		document.getElementById(icondId).className = "glyphicon glyphicon-ok";
+		break;
+	case "n":
+	case "N":
+	case "false":
+	case "False":
+		document.getElementById(icondId).className = "glyphicon glyphicon-remove";
+		break;
+	}
+}
+
+/**
+ * changeUserClass
+ * 
+ * Change the icon when the active selection is selected in (Add user to
+ * RMTools)
+ * 
+ * @param value
+ * @returns
+ */
+function changeUserClass(icondId, value) 
+{
+	switch (value) {
+	case "y":
+	case "Y":
+	case "true":
+	case "True":
+		document.getElementById(icondId).className = "glyphicon glyphicon-user";
+		document.getElementById(icondId).style.color= "green";
+		break;
+	case "n":
+	case "N":
+	case "false":
+	case "False":
+		document.getElementById(icondId).className = "glyphicon glyphicon-remove";
+		document.getElementById(icondId).style.color= "maroon";
+		break;
+	}
+}
+
+/**
+ * enableCopyProjectToSelection
+ * 
+ * Call from Management - DB Manager - Projects - Copy Linkings Enable / Disable
+ * Copy Linkings from Project - Project to select box and submit button
+ * 
+ * @returns
+ */
+function enableCopyProjectToSelection() 
+{
+	if ($('#projectLinkedFromId').val() > 0) {
+		$('#projectLinkedToId').prop('disabled', false);
+		$('#copyLinkButton').prop('disabled', false);
+	} else {
+		$('#projectLinkedToId').prop('disabled', true);
+		$('#copyLinkButton').prop('disabled', true);
+	}
+}
+
+/**
+ * From Websphere > Uploads > FileUpload Form
+ * Enable / disable fileUpload input field and buttons
+ * 
+ * @param component The active tab (Ear or Prop)
+ * @param projectId The select Project
+ * @param hideBtnAddFile Do
+ * @returns
+ */
+function toggleComponents(component, projectId, disabledBtnAddFile)
+{
+	var datatable = $('#tblEarFiles').DataTable();		// The active DataTable	
+	var progressBar = $('#progressEar');				// The upload progress bar
+	var btnAddFile = $('#btnAddEarFile');				// The [Add File] input upload button
+	var btnClearAllFiles = $('#btnClearAllEarFiles');	// The [Clear all] button
+	var btnUploadFiles = $('#btnUploadEarFiles');		// The [Upload file(s)] button
+	var inputUploadFile = $('#inputAddEarFile');		// The input file upload	
+	var errorInput = $('#earFilesError');
+	var errorThead = $('#earFilesThead');
+
+	// Set var following selected component [tab] Ear or Prop
+	if (component == 'prop') {		
+		datatable = $('#tblPropFiles').DataTable();
+		progressBar = $('#progressProp');
+		btnAddFile = $('#btnAddPropFile');
+		btnClearAllFiles = $('#btnClearAllPropFiles');
+		btnUploadFiles = $('#btnUploadPropFiles');
+		inputUploadFile = $('#inputAddPropFile');
+		errorInput = $('#propFilesError');
+		errorThead = $('#propFilesThead');
+	} 
+	
+	// If a project is selected, enable [Upload file(s)] and [Clear all] buttons
+	if (projectId > 0) 
+	{			
+		btnAddFile.removeClass('btn-disabled');
+		inputUploadFile.prop('disabled', false);
+	} 
+	else 
+	{	
+		// No project selected, reset all buttons
+		datatable.rows(".new").remove().draw();		
+		
+		if (disabledBtnAddFile) {
+			btnAddFile.addClass('btn-disabled');
+			inputUploadFile.prop('disabled', true); // Disabling the [Add file] button is not enough. Clicking on the button would still display the file explorer
+		}
+		
+		progressBar.css('display', 'none');
+		btnUploadFiles.css("visibility", "hidden");
+		btnClearAllFiles.css("visibility", "hidden");
+		inputUploadFile.val('');		
+		errorInput.css('display', 'none');
+		errorThead.removeClass('has-error');
+	}	
+}
+
+/**
+ * Enable / disable Websphere Upload Files Properties Project select option
+ * 
+ * @param envId
+ * @param selectId
+ * @returns
+ */
+function toggleUploadFormSelectElement(envId, selectId) 
+{	
+	var value = $(envId + " option:selected").val();
+	if (value > 0 ) {
+		$(selectId).prop('disabled', false);
+	} else {
+		$(selectId + " option:gt(0)").remove();
+		$(selectId).prop('disabled', true);
+		toggleComponents('prop', 0, true);
+	}
+}
+
+/**
+ * Display the selected files to be uploaded
+ * 
+ * @param component The active tab (Ear or Prop)
+ * @param files The array of files
+ * @returns
+ */
+function displayFileList(component, files)
+{
+	var datatable = $('#tblEarFiles').DataTable();
+	var btnUploadFiles = $('#btnUploadEarFiles');
+	var btnClearAllFiles = $('#btnClearAllEarFiles');
+	var progressBar = $('#progressEar'); // The upload progress bar
+	
+	// Set var following selected component [tab] Ear or Prop
+	if (component == 'prop') {
+		
+		datatable = $('#tblPropFiles').DataTable();		
+		btnClearAllFiles = $('#btnClearAllPropFiles');
+		btnUploadFiles = $('#btnUploadPropFiles');
+		progressBar = $('#progressProp');
+	} 
+	
+	var numFiles = files.length;
+	if (numFiles > 0) 
+	{		
+		btnUploadFiles.css("visibility", "visible");
+		btnClearAllFiles.css("visibility", "visible");
+		progressBar.css('display', '');
+	}
+	
+	for (var i = 0; i < numFiles; i++) 
+	{
+		var file = files[i];
+		var fileNameFormatted =  file.name.replace(/\./g,'-');
+				
+		// Avoid duplicate entry, if present do not add. Select row by class name, which is the file name formatted (dot[.] are stripped). 
+		if (datatable.rows('.' + fileNameFormatted) != 1)
+		{
+		  var val = $('#deleteButtonText').val();
+		  var node = datatable.row.add([file.name 
+			  + " <button type='button' id='btnDeleteFile' class='btn btn-danger btn-xs' style='float: right;' onclick=\"clearFiles('" + component + "','" + fileNameFormatted + "')\"><span class='glyphicon glyphicon-trash' style='color: white;'>&nbsp;</span>" 
+			  + val + "</button>"]).draw().node();
+		 
+		  $(node).addClass('new');			// Use by the [Clear all] button
+		  $(node).addClass(fileNameFormatted); // Use to delete a specific row		  
+		}
+	}		
+}
+
+/**
+ * form:input type=file does not allowed its content to be modified. Set a list of deleted files and remove them from the list on sever side
+ */
+var deletedFiles = [];
+
+/**
+ * Clear all files or a specific row, from the display, and from memory
+ * 
+ * @param component The active tab (Ear or Prop)
+ * @param element The row to remove (by it's class name)
+ * @returns
+ */
+function clearFiles(component, element)
+{
+	var datatable = $('#tblEarFiles').DataTable();
+	
+	// Set var following selected component [tab] Ear or Prop
+	if (component == 'prop') {
+		datatable = $('#tblPropFiles').DataTable();
+	}
+
+	// No specific row specified delete all the rows from table and memory
+	if (element == undefined) {		
+		toggleComponents(component, 0, false);
+	} 
+	else 
+	{	
+		datatable.rows('.' + element).remove().draw();	// Delete the row by it's class name
+		deletedFiles.push(element);
+		
+		if (datatable.data().count() == 2) {
+			toggleComponents(component, 0, false);	// If no more rows reset all buttons
+		}			
+	}	
+}
+
+/**
+ * Validate and Upload ear and properties files to their destination
+ * 
+ * @param formSubmit
+ * @param url
+ * @returns
+ */
+function saveUploadedFiles(formSubmit, url, progressBarId) 
+{
+	$.when(isAuthenticated()).then
+	(			
+		function(data, textStatus, jqXHR) 
+		{
+			var formData = new FormData($(formSubmit)[0]);
+
+			var index = 0;
+			for(x in deletedFiles){
+			    formData.append("deletedFiles[" + index + "]", deletedFiles[x]);
+			    index++;
+			}
+			deletedFiles.length = 0;
+
+			// Ajax call for file uploaling
+		    var ajaxReq = $.ajax(
+			{
+				url : url,
+		      	type : 'POST',
+		      	data : formData,
+		      	cache : false,
+		      	contentType : false,
+		      	processData : false,
+		      	xhr: function()
+			  	{		        
+		        	var xhr = $.ajaxSettings.xhr();
+		        
+		        	//Set onprogress event handler 
+		         	xhr.upload.onprogress = function(event) {
+		          		var perc = Math.round((event.loaded / event.total) * 100);
+		          		$(progressBarId).text(perc + '%');
+		          		$(progressBarId).css('width',perc + '%');
+		         	};
+		         	return xhr ;
+		    	},
+		    	
+		    	beforeSend: function( xhr ) {
+		    		$(progressBarId).text('');
+		    		$(progressBarId).css('width','0%');
+		        }
+		    });
+		  
+		    // Called on success of file upload
+		    ajaxReq.done(function(data) 
+			{
+				$(".container").html($('#containerData', data));						
+				
+				$('table').DataTable({
+					"language" : {"url" : dataTableLang},							
+					"columnDefs" : [{targets : 'no-sort', orderable : false}]
+				});						
+		    });
+		    
+		    // Called on failure of file upload
+		    ajaxReq.fail(function(xhr, text, error) {
+				$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));		      
+		    });
+		}
+	);
+}
+
+/**
+ * Save the new state in the State table
+ * 
+ * @param url	Controller url
+ * @param state	The new state
+ * @param env	Environment id
+ * @param proj	Project id
+ * @returns
+ */
+function saveStateViewerState(url, state, env, proj)
+{
+	$.when(isAuthenticated()).then
+	(			
+		function(data, textStatus, jqXHR) 
+		{
+			var formData = {};			
+			formData['state'] = state;
+			formData['environment'] = env;
+			formData['project']= proj;			
+			
+			// Ajax call
+			var elem = $("#"+env+proj).find("#"+proj);
+		    var ajaxReq = $.ajax(
+			{
+		     	url : url,
+		      	type : 'POST',
+		      	data : JSON.stringify(formData),
+		      	cache : false,  
+		      	contentType: "application/json"
+		    });
+		  		    
+		    // Called on success
+		    ajaxReq.done(function(data)
+			{		    	
+				if (data.currentState == 'Redeployable') {
+					$(elem).css("color", getComputedStyle(document.documentElement,null).getPropertyValue('--mainActiveColor'));
+				} else {
+					$(elem).css("color", getComputedStyle(document.documentElement,null).getPropertyValue('--mainNonActiveColor'));
+				}
+		    });
+
+		    // Called on failure
+		    ajaxReq.fail(function(xhr, text, error) {
+				$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));		      
+		    });
+		}
+	);	
+}
+
+/**
+ * Display or hide the Deployment History search box
+ */
+function deploymentHistorySearchBox()
+{
+	$( "#searchForm" ).toggle();
+	$( "i.glyphicon-plus" ).toggleClass( "glyphicon-minus" );
+
+	if($('#searchForm').css('display') == 'none'){
+		$('.search').height(45.5);
+	} else {
+		$('.search').height('auto');
+	}
+}
+
+/**
+ * Display or hide the Users Utilities search box
+ */
+function usersUtilitiesSearchBox()
+{
+	$( "#searchForm" ).toggle();
+	$( "i.glyphicon-plus" ).toggleClass( "glyphicon-minus" );
+
+	if($('#searchForm').css('display') == 'none'){
+		$('.search').height(45.5);
+	} else {
+		$('.search').height('auto');
+	}
 }
