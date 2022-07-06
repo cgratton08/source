@@ -1,124 +1,108 @@
-========================================================================================================
-RMTOOLS SECURITY - Enable SSL with SpringBoot localhost
-========================================================================================================
-- Generate a self-signed certificate with this command:
+	/*
+	 * Display short version on one line
+	 */
+    public String getShortVersion()
+    {
+    	// Artifact's name from the pom.xml file
 
-	keytool -genkeypair -alias RmtoolsMSIntact -keyalg RSA -keysize 2048 -storetype PKCS12 -keypass rmtoolsms -storepass rmtoolsms -keyalg RSA -keystore RmtoolsMSIntact.p12 -validity 3650 -dname "CN=RMTools, OU=Middleware, O=Intact, L=Montreal, ST=QC, C=CA" -ext SAN=IP:127.0.0.1,IP:10.161.39.27,DNS:localhost,DNS:127.0.0.1,DNS:10.161.39.27
-	
-	NOTE: This Keytool command does not work because keytool does not accept DNS:127.0.0.1,DNS:10.161.39.27 as SAN extensions parameter. [DNSName components must begin with a letter]
-	those parameters are needed to remove the warning in Chrome and IE
-	You can still generate the certificate without those two extension paramters, SSL will work but you will have the warning in both Chrome and IE.
-	
-	INSTEAD
-		Use KSE Key Store Explorer (kse) F:\Projets\RMTools\SSL\kse-532\kse.exe to generate the certificate with all required parameters.
-		KSE does not restric on the format of the SANs (Subject Alternative Name) 
+    	StringBuilder sb = new StringBuilder();
+    	sb.append(buildProperties.getName())
+    	.append(" Version: ")
+    	.append(buildProperties.getVersion())
+    	.append(" Last-build: ")
+    	.append(buildProperties.getTime())
+    	.append(" Build with java: ")
+    	.append(buildProperties.get(JAVA_VERSION));
+    	
+    	return sb.toString();
+    }
+    
+    /*
+     * Display short version on multiple lines
+     */
+    public String getShortVersionFormatted()
+    {
+    	// Artifact's name from the pom.xml file
 
-- With KSE 
-	File - new (Key Store Type) PKXS(#12)
-	Generate Key Pair	(RSA)
-	generate a Store Certificate with those informations: Info du certificat: CN=RMToolsMS,OU=Middleware,O=Intact,L=Montreal,ST=QC,C=CA
+    	StringBuilder sb = new StringBuilder();
+    	sb.append(buildProperties.getName())
+    	.append("\n\tVersion: ")
+    	.append(buildProperties.getVersion())
+    	.append("\n\tLast-build: ")
+    	.append(buildProperties.getTime())
+    	.append("\n\tBuild with java: ")
+    	.append(buildProperties.get(JAVA_VERSION));
 
-	Ajuster la periode de validite pour 25 ans
+    	return sb.toString();
+    }
+    
+	/*
+	 * Display short version on one line
+	 */
+    public Map<String,String> getShortVersionAsMap()
+    {
+    	// Artifact's name from the pom.xml file
 
-	Ajouter des extensions the SANs (Subject Alternative Name / Nom alternatif du sujet du certificat) 
-		Adresse IP: 127.0.0.1
-		Adresse IP: 10.189.65.84 (local ip)
-		(for IE ajouter)
-		DNS Nom d'hote pleinement qualifie: 10.189.65.84 (local ip)
-		DNS Nom d'hote pleinement qualifie: 127.0.0.1
-		DNS Nom d'hote pleinement qualifie: localhost
-		  
-	Suggestion: Utiliser rmtoolsms comme pwd
-		
-- Depuis KSE exporter la paire de clefs [RmtoolsIntactMS.p12] et le certificat [RmtoolsIntactMS.cer] sous F:\Projets\Security\certificats\rmtools_local
-  et Copier la paire de clefs RmtoolsIntactMS.p12 dans le code source de Rmtools: F:\git\RMToolsMS\src\main\resources\
+    	Map<String,String> map = new HashMap<>();
+    	map.put("name", buildProperties.getName());
+    	map.put("version", buildProperties.getVersion());
+    	map.put("time", buildProperties.getTime().toString());
+    	map.put("javaVersion", buildProperties.get(JAVA_VERSION));
+ 	
+    	return map;
+    }
 
-- Référencer le fichier RMToolsMSIntact.p12 dans le fichier F:\git\RMToolsMS\src\main\resources\application_dev.yaml
-  port: 8443  
-  ssl:
-    enabled: true
-    keyStoreType: PKCS12
-    key-store: classpath: RmtoolsMSIntact.p12
-    key-store-password: rmtoolsms
+    
+    /*
+     * Display long version on one line
+     */
+    public String getLongVersion()
+    {
+    	// Artifact's name from the pom.xml file
 
-Dans le JDK de Java importer le certificat File: C:\javasoft\jdk8\jre\lib\security\cacerts
+    	StringBuilder sb = new StringBuilder();
+    	sb.append(buildProperties.getName())
+    	.append(" Version: ")
+    	.append(buildProperties.getVersion())
+    	.append(" Last-build: ")
+    	.append(buildProperties.getTime())  	
+    	.append(" Artifact: ")
+    	.append(buildProperties.getArtifact())
+    	.append(" Group: ")
+    	.append(buildProperties.getGroup())
+    	.append(" Build with java: ")
+    	.append(buildProperties.get(JAVA_VERSION));
+	    	    	
+    	return sb.toString();
+    } 
+    
+    /*
+     * Display long version on multiple lines
+     */
+    public String getLongVersionFormatted()
+    {
+    	// Artifact's name from the pom.xml file
 
----------------------------------------
+    	StringBuilder sb = new StringBuilder();
+    	sb.append(buildProperties.getName())
+    	.append("\n\tVersion: ")
+    	.append(buildProperties.getVersion())
+    	.append("\n\tLast-build: ")
+    	.append(buildProperties.getTime())  	
+    	.append("\n\tArtifact: ")
+    	.append(buildProperties.getArtifact())
+    	.append("\n\tGroup: ")
+    	.append(buildProperties.getGroup())
+    	.append("\n\tBuild with java: ")
+    	.append(buildProperties.get(JAVA_VERSION));
+    	
+    	return sb.toString();
+    } 
 
-With Chrome and IE import certificate in [Autorite de Certification racines de confiance]
-	NOTE: The certificate contain the public key
-
-RMTools will now work secure without warning with addresses: 
-	https://localhost:8003/login
-	https://127.0.0.1:8003/login
-	https://10.161.39.27:8003/login
-
-========================================================================================================
-RMTOOLS SpringBoot Install Certificates
-========================================================================================================
-Old certificate: iroot2015ca
-
-1) In order to establish a secure (ssl) ldap connection, import Intact certificates from this url http://crldp.pki.intactfc.com/crldp/
-   into local java 8 certificate store: [JAVA_HOME]\jre\lib\security\cacerts
-
-2) To proceed
-
-- Import all certificates from the url above (12 certificates) to local  F:\Projets\RMTools\certificats
-	* IntactIssuingCA-Mobile-1.crt
-	* IntactIssuingCA-Mobile-2.crt
-	* IntactIssuingCA-Private-1.crt
-	* IntactIssuingCA-Private-2.crt
-	* IntactIssuingCA-Private-3.crt
-	* IntactIssuingCA-Public-1.crt
-	* IntactIssuingCA-Public-2.crt
-	* IntactIssuingCA-Public-3.crt
-	* IntactIssuingCA-RP1-1.crt
-	* IntactIssuingCA-TAD-1.crt
-	* IntactPolicyCA-1.crt
-	* IntactRootCA.crt
-
-- Using one of the two solutions import thoses certificates into Java 8 keystore
-
-Default pwd for:
-cacerts: changeit
-*.p12:	 WebAS
-
-a) Using java cmdline import certificates one by one into java certificate store
-   JAVA_HOME = C:\javasoft\jdk8
-   - [JAVA_HOME]\bin\keytool -import -alias [cer alias] -keystore [JAVA_HOME]\jre\lib\security\cacerts -file F:\Projets\RMTools\certicats\[certificate]
-   - repeat for all certificates
-   
-   ex: [JAVA_HOME]\bin\keytool -import -alias [IntactRootCA] -keystore [JAVA_HOME]\jre\lib\security\cacerts -file F:\Projets\RMTools\certicats\IntactRootCA.crt
- 
-b) Use KeyStore Explorer:
-   - Downloar from http://keystore-explorer.org/downloads.html
-   - Unzip kse-532.zip
-   - cd to kse-532
-   - execute cmd -> jar java -jar kse.jar OU execute C:\javasoft\kse-532\kse.exe
-   - open Java keyStore [JAVA_HOME]\jre\lib\security\cacerts (pwd: changeit) and import each certificates   
-   - save 
-
-NOTE
-	The certificate can be also be found from a Websphere console:
-	> from Websphere console got to -> SSL certificate and key management > Key stores and certificates > NodeDefaultTrustStore > Signer certificates
-	> select the checkbox of the certificate to import:
-	> From top menu of console click [extract] name file [cer file].cer (the file will be save on unix sever)
-	> copy file from server to F:\Projets\RMTools\certificates\
-	
-NOTION
-	The cacerts file is a collection of trusted certificate authority (CA) certificates. 
-	It contains certificate references for well-known Certificate authorities, such as VeriSign
-	The default password for the cacerts file supplied by Sun is changeit
-
-	A Java KeyStore (JKS) is a repository of security certificates – either authorization certificates or public key certificates
-	
-	---------------------------------
-	
-	Keystore file, keystore (p12 / jks), contains the Application Server’s certificate, including its private key. 
-	The keystore file is protected with a password, initially changeit. 
-	Change the password using keytool. For more information about keytool, read Using the keytool Utility.
-	Each keystore entry has a unique alias. After installation, the Application Server keystore has a single entry with alias s1as.
-
-	Truststore file, cacerts.jks, contains the Application Server’s trusted certificates, including public keys for other entities. 
-	For a trusted certificate, the server has confirmed that the public key in the certificate belongs to the certificate’s owner. 
-	Trusted certificates generally include those of certification authorities (CAs).
+    public void getPrintVersion() {
+    	logger.info("Name: {}\nVersion: {}\nLast build: {}\nArtifact: {}\nGroup: {}", buildProperties.getName(), buildProperties.getVersion(), buildProperties.getTime(), buildProperties.getArtifact(), buildProperties.getGroup());
+    } 
+    
+    public void getPrintVersionFormatted() {
+    	logger.info("Name: {}\n\tVersion: {}\n\tLast build: {}\n\tArtifact: {}\n\tGroup: {}", buildProperties.getName(), buildProperties.getVersion(), buildProperties.getTime(), buildProperties.getArtifact(), buildProperties.getGroup());
+    } 
