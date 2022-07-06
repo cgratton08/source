@@ -1,229 +1,93 @@
-
 <%@ page language="java" contentType="text/html; charset=ISO-8859-1" pageEncoding="ISO-8859-1"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
-<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
-<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
-<!-- jsp/websphere/deployerInterface/deploymentHistory/singleDeploymentList.jsp -->
+<%@page import="com.intact.rmtools.utils.Context" %>
+<%@page import="com.intact.rmtools.utils.MenuAccess" %>
 
 <div id="containerData">
-<p class="containerDataTitle"><spring:message code="deploymentHistory.single.page.title"/></p>
+<p class="containerDataTitle"><spring:message code="project.list.title"/></p>
 <hr>
 
-<spring:message code="deploymentHistory.updateStatusFailed" var="statusFailed"/>
-<spring:message code="deploymentHistory.updateStatusSuccess" var="statusSuccess"/>
-<spring:message code="deploymentHistory.details.title" var="deploymentHistoryDetailsTitle"/>
-<spring:message code="deploymentHistory.log.title" var="deploymentHistoryLogTitle"/>
-<spring:message code="deploymentHistory.id" var="id"/>
-<spring:message code="deploymentHistory.dateTime" var="dateTime"/>             
-<spring:message code="deploymentHistory.project" var="project"/>
-<spring:message code="deploymentHistory.node" var="node"/>
-<spring:message code="deploymentHistory.nodeLabel" var="nodeLabel"/>
-<spring:message code="deploymentHistory.earFile" var="earFile"/>
-<spring:message code="deploymentHistory.properties" var="properties"/>
-<spring:message code="deploymentHistory.runtime" var="runtime"/>
-<spring:message code="deploymentHistory.env" var="env"/>
-<spring:message code="deploymentHistory.status" var="status"/>
-<spring:message code="deploymentHistory.requester" var="requester"/>
-<spring:message code="deploymentHistory.search.byidonly" var="searchById"/>
-<spring:message code="deploymentHistory.search.title" var="searchTitle"/>
+<spring:message code="project.list.name" var="prj_name"/>
+<spring:message code="project.list.server" var="server_name"/>
+<spring:message code="project.list.cluster" var="cluster_name"/>
+<spring:message code='project.details.title' var="prjDetailsTitle"/>
 
-<style onload="setSearchDateFilterPicker('#searchDateFilterFrom', '#searchDateFilterTo');">
+<table id="projectList" class="table table-striped table-bordered filterable">
+  <thead>
+    <tr>
+      <th scope="col" style="width: 25px;" class="no-sort"><spring:message code="global.edit"/></th>
+      <th scope="col" style="width: 25px;" class="no-sort"><spring:message code="global.delete"/></th>
+      <th scope="col"><input type="text" placeholder="${prj_name}"></th>
+      <th scope="col"><input type="text" placeholder="${server_name}"></th>
+      <th scope="col"><input type="text" placeholder="${cluster_name}"></th>
+    </tr>
+  </thead>
+  <tbody>
+<c:forEach var="project" items="${projectItems}">
+<tr>
+<c:choose>
+<c:when test="${menuSecurity[RMToolsContext.APPLICATION][MenuAccess.APPLICATION_READONLY_NONPROD] != true && menuSecurity[RMToolsContext.APPLICATION][MenuAccess.APPLICATION_READONLY_PROD] != true}">
+<td style="text-align: center; vertical-align: middle;"><a href="javascript: loadEntityToEdit('/editWebsphereProject', '${project.project}')"><span class="glyphicon glyphicon-pencil edit"></span></a></td>
+<td style="text-align: center; vertical-align: middle;"><a href="#" id="iconDeleteWebsphereProj" data-name="${project.name}" data-id="${project.project}" title="Delete Project"><span class="glyphicon glyphicon-remove delete"></span></a></td>
+</c:when>
+<c:otherwise>
+<td style="text-align: center; vertical-align: middle;"><span class="glyphicon glyphicon-ban-circle"></span></td>
+<td style="text-align: center; vertical-align: middle;"><span class="glyphicon glyphicon-ban-circle"></span></td>
+</c:otherwise>
+</c:choose>
+<td>${project.name} <a href="javascript: loadModalDetails('/displayWebsphereProjectDetails/${project.project}', '#detailsModal', '${prjDetailsTitle}', '#detailsModalEditAction', '/editWebsphereProject', '#detailsModalEditValue', '${project.project}')"><span class="glyphicon glyphicon-info-sign" style="font-size: 14px; float: right;"/></a></td>			
+<td>${project.appserver}</td>
+<td>${project.appcluster}</td>
+</tr>
+</c:forEach>
+  </tbody>
+  <tfoot>
+       <tr>
+           <th colspan="2"></th>
+           <th><input type="text" placeholder="${prj_name}"></th>
+           <th><input type="text" placeholder="${server_name}"></th>
+           <th><input type="text" placeholder="${cluster_name}"></th>
+       </tr>
+   </tfoot>
+</table>
 
-</style>
-
-<c:if test="${not empty errorMessage}">
-<div class="error">Error:  ${errorMessage}</div>
-</c:if>
-<div id="error"></div>
-<div id="form-wrapper">
-
-<form:form id="deplHistoryForm" modelAttribute="singleDeploymentForm" method="post">
-
-	<div class="search">
-
-	    <spring:bind path="searchDateFilterFrom">
-	    <div class="input-group date queueEdit" id='searchDatePickerFrom' style="width: 270px; float: left; margin-right: 15px;">
-	    	<span class="input-group-addon" style="min-width: 100px; font-size: 11.5px;"><i class="glyphicon glyphicon-asterisk"></i>&nbsp;&nbsp;<spring:message code='global.from'/></span> 
-	        <form:input path="searchDateFilterFrom" id="searchDateFilterFrom" style="font-size: 11.5px;" maxlength="10" class="form-control" placeholder="${singleDeploymentForm.searchDateFilterFromFormatted}"/>
-	        <span class="input-group-addon" style="min-width: 40px; text-align: right;">
-	        	<span class="glyphicon glyphicon-calendar"></span>
-	        </span>            
-	    </div>
-	    </spring:bind> 
-	
-	    <spring:bind path="searchDateFilterTo">
-	    <div class="input-group date queueEdit" id='searchDatePickerTo' style="width: 270px; float: left;">
-	    	<span class="input-group-addon" style="min-width: 100px; font-size: 11.5px;"><i class="glyphicon glyphicon-asterisk"></i>&nbsp;&nbsp;<spring:message code='global.to'/></span> 
-	        <form:input path="searchDateFilterTo" id="searchDateFilterTo" style="font-size: 11.5px;" maxlength="10" class="form-control" placeholder="${singleDeploymentForm.searchDateFilterToFormatted}"/>
-	        <span class="input-group-addon" style="min-width: 40px; text-align: right;">
-	        	<span class="glyphicon glyphicon-calendar"></span>
-	        </span>            
-	    </div>
-	    </spring:bind>
-	    
-	    <div class="searchBoxButton" lang="${pageContext.response.locale}">        
-	        <div class="submitButton">
-	            <button type="button" id="processAppDeployerButton" class="btn btn-secondary-search" style=" padding: 3px 5px; font-size: 11.5px;" onclick="postUrl('#deplHistoryForm', '/displayWebsphereSingleDeployment', 'desc', 1, true)"><spring:message code='button.search'/></button>
-	        </div>
-	    </div>
-		
-		<i class="glyphicon glyphicon-plus" style="margin-left: 95px;" onclick="deploymentHistorySearchBox();" title="${searchTitle}"></i>
-		<div id="searchForm" style="visibility: visible; display: none;">
-			<br>
-				<spring:bind path="searchProject">
-		        <div class="input-group">
-		            <span class="input-group-addon" style="min-width: 150px;"><i class="glyphicon glyphicon-asterisk"></i>&nbsp;&nbsp;<spring:message code='deploymentHistory.project'/></span>
-		            <form:select path="searchProject" class="form-control" style="width: 405px;" id="searchProject">
-		                <form:option value="-1" label="${makeChoice}"></form:option>
-		                <form:options items="${projectItems}" itemValue="project" itemLabel="name"/>               
-		            </form:select>               
-		        </div>
-		    	</spring:bind>    
-			<br>
-				<spring:bind path="searchNode">
-		        <div class="input-group">
-		            <span class="input-group-addon" style="min-width: 150px;"><i class="glyphicon glyphicon-asterisk"></i>&nbsp;&nbsp;<spring:message code='deploymentHistory.nodeLabel'/></span>
-		            <form:select path="searchNode" class="form-control" style="width: 405px;" id="searchNode">
-		                <form:option value="-1" label="${makeChoice}"></form:option>
-		                <form:options items="${nodeItems}" itemValue="environment" itemLabel="label"/>               
-		            </form:select>
-		        </div>
-		    	</spring:bind>    
-			<br>
-				<spring:bind path="searchEnvironment">
-		        <div class="input-group">
-		            <span class="input-group-addon" style="min-width: 150px;"><i class="glyphicon glyphicon-asterisk"></i>&nbsp;&nbsp;<spring:message code='deploymentHistory.env'/></span>
-		            <form:select path="searchEnvironment" class="form-control" style="width: 405px;" id="searchEnvironment">
-		                <form:option value="-1" label="${makeChoice}"></form:option>
-		                <form:options items="${environmentItems}" itemValue="environmentType" itemLabel="envName"/>               
-		            </form:select>
-		        </div>
-		    	</spring:bind>    
-			<br>
-				<spring:bind path="searchRequester">
-		        <div class="input-group">
-		            <span class="input-group-addon" style="min-width: 150px;"><i class="glyphicon glyphicon-asterisk"></i>&nbsp;&nbsp;<spring:message code='deploymentHistory.requester'/></span>
-		            <form:select path="searchRequester" class="form-control" style="width: 405px;" id="searchRequester">
-		                <form:option value="-1" label="${makeChoice}"></form:option>
-		                <form:options items="${userItems}" itemValue="userList" itemLabel="name"/>               
-		            </form:select>
-		        </div>
-		    	</spring:bind>    
-			<br>
-				<spring:bind path="searchDeploymentId">
-		        <div class="input-group">
-		            <span class="input-group-addon" style="min-width: 150px; background-color: var(--mainColor); color: white;"><i class="glyphicon glyphicon-font" style="color: white;"></i>&nbsp;&nbsp;<spring:message code='deploymentHistory.id'/></span>
-		             <form:input path="searchDeploymentId" id="searchDeploymentId" maxlength="50" class="form-control" style="width: 405px;" placeholder="${searchById}"/>              
-		        </div>
-		    	</spring:bind>
-		</div>
-	    	    
+<div class="modal fade" id="deleteWebsphereProjectModal" tabindex="-1" role="dialog" aria-labelledby="" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">        
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="modalTitle"><spring:message code='project.delete.title'/></h4>
+      </div>
+      <div class="modal-body"> 
+        <spring:message code='project.delete.confirm'/>: <span style="font-weight:600;" id="websphereModalProjId"></span>       
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="deleteWebsphereProjectCancel" class="btn btn-secondary" data-dismiss="modal"><spring:message code='button.cancel'/></button>
+        <button type="button" id="deleteWebsphereProjectProceed" class="btn btn-primary"><spring:message code='global.proceed'/></button>
+      </div>
     </div>
-   
-  <div class="tab-content">
-    <table id="tblLinkedProjects" class="table table-striped table-bordered filterable">
-        <thead>
-            <tr>
-              <th scope="col" style="width: 25px;" class="no-sort"><spring:message code="deploymentHistory.details"/></th>
-	          <th scope="col"><input type="text" placeholder="${id}"></th>
-	          <th scope="col"><input type="text" placeholder="${dateTime}"></th>
-	          <th scope="col"><input type="text" placeholder="${project}"></th>
-	          <th scope="col"><input type="text" placeholder="${nodeLabel}"></th>
-	          <th scope="col"><input type="text" placeholder="${earFile}"></th>
-	          <th scope="col"><input type="text" placeholder="${properties}"></th>
-	          <th scope="col"><input type="text" placeholder="${runtime}"></th>
-	          <th scope="col"><input type="text" placeholder="${env}"></th>
-	          <th scope="col"><input type="text" placeholder="${status}"></th>
-              <th scope="col"><spring:message code="deploymentHistory.updateStatus"/></th>
-              <th scope="col"><input type="text" placeholder="${requester}"></th>
-              <th scope="col" class="no-sort"><spring:message code="deploymentHistory.log"/></th>                                       
-            </tr>
-          </thead>
- 
-          <tbody>
-			<c:forEach var="sdi" items="${singleDeploymentItems}">
-			<tr>
-			<td style="text-align: center; vertical-align: middle;"><a href="javascript: loadModalDetails('/displayWebsphereSingleDeploymentDetails/${sdi.deployment}', '#detailsModal', '${deploymentHistoryDetailsTitle}')"><span class="glyphicon glyphicon-list-alt"></span></a></td>
-			<td>${sdi.deployment}</td>
-			<td><fmt:formatDate value="${sdi.dateTime}" pattern="yyyy-MM-dd HH:mm:ss" /></td>			
-			<td>${sdi.project.name}</td>
-			<td>${sdi.environment.label}<span style="float:right; font-size: 15px;" title="NODE: ${sdi.environment.node}"><i class="glyphicon glyphicon-option-horizontal"></i></span></td>
-			<td>${sdi.earFileName}</td>
-			<td>${sdi.propsFileName}</td>
-			<td>${sdi.environment.runtimeVersions.label}</td>			
-			<td>${sdi.environment.environmentType.envName}</td>
-			<td id="status${sdi.deployment}">${sdi.status}</td>
-			
-			<td align="center">
-				<a href="javascript: updateSingleDeploymentStatus('#deplHistoryForm', '/updateWebsphereSingleDeploymentStatus/${sdi.deployment}/failed', ${sdi.deployment})"><span class="glyphicon glyphicon-remove" style="color: firebrick; padding-right: 5px;" title="${statusFailed}"></span></a>
-				<b> / </b>
-				<a href="javascript: updateSingleDeploymentStatus('#deplHistoryForm', '/updateWebsphereSingleDeploymentStatus/${sdi.deployment}/success', ${sdi.deployment})"><span class="glyphicon glyphicon-ok" style="color: green; padding-left: 5px;"  title="${statusSuccess}"></span></a>
-			</td>
-			<td>${sdi.userList.name}</td>
-			<td style="text-align: center; vertical-align: middle;"><a href="javascript: loadModalDetails('/displayWebsphereSingleDeploymentLogs/${sdi.deployment}', '#logModal', '${deploymentHistoryLogTitle}')"><span class="glyphicon glyphicon-list-alt"></span></a></td>
-			</tr>
-			</c:forEach>
-          </tbody>
-          <tfoot>
-	       <tr>
-	           <th></th>
-	           <th><input type="text" placeholder="${id}"></th>
-	           <th><input type="text" placeholder="${dateTime}"></th>
-	           <th><input type="text" placeholder="${project}"></th>
-	           <th><input type="text" placeholder="${nodeLabel}"></th>
-	           <th><input type="text" placeholder="${earFile}"></th>
-	           <th><input type="text" placeholder="${properties}"></th>
-	           <th><input type="text" placeholder="${runtime}"></th>
-	           <th><input type="text" placeholder="${env}"></th>
-	           <th><input type="text" placeholder="${status}"></th>
-	           <th></th>
-	           <th><input type="text" placeholder="${requester}"></th>
-	           <th></th>	           
-	       </tr>
-	   	  </tfoot>                              
-     </table>
   </div>
-   
-</form:form>   
-   
 </div>
 
-
-<div class="modal fade" id="detailsModal" tabindex="-1" role="dialog" aria-labelledby="" aria-hidden="true">
+ <div class="modal fade" id="detailsModal" tabindex="-1" role="dialog" aria-labelledby="" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" role="document" style="width: 700px;">
     <div class="modal-content">
       <div class="modal-header">        
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title" id="modalTitle"></h4>
+        <h4 class="modal-title" id="modalTitle" ></h4>
       </div>
       
       	<div class="modal-body"></div>
       
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal"><spring:message code='button.close'/></button>
+      	<input type="hidden" id="detailsModalEditAction" value="">
+      	<input type="hidden" id="detailsModalEditValue" value="">
+      	<button type="button" class="btn btn-secondary" data-dismiss="modal"><spring:message code='button.close'/></button>
+      	<button type="button" class="btn btn-secondary" data-dismiss="modal"  onclick="$('#detailsModal').modal('hide'); $('.modal-backdrop').remove(); loadEntityToEdit($('input#detailsModalEditAction').val(), $('input#detailsModalEditValue').val());"><spring:message code='button.edit'/></button>        
       </div>
     </div>
   </div>
-</div>
+</div> 
 
-<div class="modal fade" id="logModal" tabindex="-1" role="dialog" aria-labelledby="" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" role="document" style="width: 75%; margin-top: 0px; margin-bottom: 0px">
-    <div class="modal-content">
-      <div class="modal-header">        
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title" id="modalTitle"></h4>
-      </div>
-      
-      	<div class="modal-body" style="height: 550px; overflow-y: auto;"></div>
-      
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal"><spring:message code='button.close'/></button>
-      </div>
-    </div>
-  </div>
-</div>
-  
-  
-  
 </div>
