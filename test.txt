@@ -1,18 +1,10 @@
-# Error text
-error.field.error=Erreur
-error.field.message=Message
-error.field.path=Chemin
-error.field.status=Statut
-error.field.timestamp=Temps
-error.field.trace=Trace
+<div class="error">Error:  ${errorMessage}</div>
+</c:if>
 
-# Error messages
-input.field.empty=Le champ doit contenir une valeur.
-input.field.selected=Sélectionnez une option.
-input.field.selectedOneOrMore=Sélectionnez une ou plusieurs options.
-input.field.emptyList=La liste ne peut être vide.
-input.field.numericOnly=Valeurs numériques seulement.
-input.field.wrong.format=Le format du champ n'est pas valide.
-input.field.length=La longueur maximale du champ est de [{0}] caractères.
-input.email.invalid=Le courriel est invalide.
-typeMismatch.java.lang.Long=Valeurs numériques seulement.
+<spring:message code='global.makeChoice' var="makeChoice"/>
+
+<style>
+.dataTables_filter, .dataTables_info, .dataTables_paginate, .dataTables_length { display: none;}
+.dataTables_wrapper { margin-top: 0px; }
+</style>
+
