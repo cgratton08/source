@@ -8,3 +8,190 @@
 .dataTables_wrapper { margin-top: 0px; }
 </style>
 
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1" pageEncoding="ISO-8859-1"%>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
+
+
+<div id="containerData">
+<p class="containerDataTitle"><spring:message code="project.add"/></p>
+<hr>
+
+<spring:message code='project.copyFrom' var="copyFrom"/>
+<spring:message code='global.makeChoice' var="makeChoice"/>
+<spring:message code='project.name' var="name"/>
+<spring:message code='project.nameTitle' var="nameTitle"/>
+<spring:message code='project.appServerName' var="appServerName"/>
+<spring:message code='project.appServerNameTitle' var="appServerNameTitle"/>
+<spring:message code='project.appClusterName' var="appClusterName"/>
+<spring:message code='project.appClusterNameTitle' var="appClusterNameTitle"/>
+<spring:message code='project.warClassLoader' var="warClassLoader"/>
+<spring:message code='project.warClassLoaderMode' var="warClassLoaderMode"/>
+<spring:message code='project.pregoalScript' var="pregoalScript"/>
+<spring:message code='project.pregoalScriptTitle' var="pregoalScriptTitle"/>
+<spring:message code='project.postgoalScript' var="postgoalScript"/>
+<spring:message code='project.postgoalScriptTitle' var="postgoalScriptTitle"/>
+<spring:message code='project.properties' var="properties"/>
+<spring:message code='project.propertiesTitle' var="propertiesTitle"/>
+<spring:message code='project.sharedLibrarySeparator' var="sharedLibrarySeparator"/>
+<spring:message code='project.sharedLibrarySeparatorTitle' var="sharedLibrarySeparatorTitle"/>
+<spring:message code='project.serverStartTimeout' var="serverStartTimeout"/>
+<spring:message code='project.serverStartTimeoutTitle' var="serverStartTimeoutTitle"/>
+<spring:message code='project.syncDelay' var="syncDelay"/>
+<spring:message code='project.syncDelayTitle' var="syncDelayTitle"/>
+<spring:message code='project.ejbOnly' var="ejbOnly"/>
+<spring:message code='project.generatePlugin' var="generatePlugin"/>
+
+<div id="form-wrapper">
+<form:form id="projectForm" modelAttribute="projectForm" method="post">
+        
+    <spring:bind path="copyFrom">
+        <div class="input-group">
+            <span class="input-group-addon formSelect"><i class="glyphicon glyphicon-asterisk"></i>&nbsp;&nbsp;<spring:message code='project.copyFrom'/></span>            
+            <form:select path="copyFrom" class="form-control" id="copyFrom" onchange="loadValues('#projectForm', '/copyWebsphereProjectValues', 1, false)">
+                <form:option value="-1" label="${makeChoice}"></form:option>
+                <form:options items="${copyFromItems}" itemValue="project" itemLabel="name"/>               
+            </form:select>                          
+        </div>
+    </spring:bind>
+    
+    <spring:bind path="name">
+        <div class="input-group ${status.error ? 'has-error' : ''}">
+            <span class="input-group-addon"><i class="glyphicon glyphicon-font"></i>&nbsp;&nbsp;<spring:message code='project.name'/></span>            
+                <form:input path="name" id="name" maxlength="50" class="form-control" placeholder="${name}"  title="${nameTitle}"/>
+                <form:errors path="name" class="form-control control-label form-input-error"/>              
+        </div>
+    </spring:bind>    
+
+    <spring:bind path="appserver">
+        <div class="input-group ${status.error ? 'has-error' : ''}">
+            <span class="input-group-addon"><i class="glyphicon glyphicon-font"></i>&nbsp;&nbsp;<spring:message code='project.appServerName'/></span>            
+                <form:input path="appserver" id="appserver" maxlength="80" class="form-control" placeholder="${appServerName}"  title="${appServerNameTitle}"/>
+                <form:errors path="appserver" class="form-control control-label form-input-error"/>              
+        </div>
+    </spring:bind>
+    
+    <spring:bind path="appcluster">
+        <div class="input-group ${status.error ? 'has-error' : ''}">
+            <span class="input-group-addon"><i class="glyphicon glyphicon-font"></i>&nbsp;&nbsp;<spring:message code='project.appClusterName'/></span>            
+                <form:input path="appcluster" id="appcluster" maxlength="80" class="form-control" placeholder="${appClusterName}"  title="${appClusterNameTitle}"/>
+                <form:errors path="appcluster" class="form-control control-label form-input-error"/>              
+        </div>
+    </spring:bind>
+    
+     <spring:bind path="classloader">
+        <div class="input-group">
+            <span class="input-group-addon formSelect"><i class="glyphicon glyphicon-asterisk"></i>&nbsp;&nbsp;<spring:message code='project.warClassLoader'/></span>            
+            <form:select path="classloader" class="form-control selectpicker" id="classloader">
+                <form:options items="${classloaderItems}"  itemValue="value" itemLabel="label"/>
+            </form:select>                          
+        </div>
+    </spring:bind>   
+    
+    <spring:bind path="classloadermode">
+        <div class="input-group">
+            <span class="input-group-addon formSelect"><i class="glyphicon glyphicon-asterisk"></i>&nbsp;&nbsp;<spring:message code='project.warClassLoaderMode'/></span>            
+            <form:select path="classloadermode" class="form-control selectpicker" id="classloadermode">
+                <form:options items="${classloaderModeItems}"  itemValue="value" itemLabel="label"/>
+            </form:select>                          
+        </div>
+    </spring:bind>
+       
+    <spring:bind path="weight">
+        <div class="input-group">
+            <span class="input-group-addon formSelect"><i class="glyphicon glyphicon-asterisk"></i>&nbsp;&nbsp;<spring:message code='project.startWeight'/></span>            
+            <form:select path="weight" class="form-control selectpicker" id="weight">
+                <form:options items="${weightItems}"  itemValue="value" itemLabel="label"/>
+            </form:select>                          
+        </div>    
+    </spring:bind>       
+       
+    <spring:bind path="pregoal">
+        <div class="input-group ${status.error ? 'has-error' : ''}">
+            <span class="input-group-addon"><i class="glyphicon glyphicon-font"></i>&nbsp;&nbsp;<spring:message code='project.pregoalScript'/></span>            
+                <form:input path="pregoal" id="pregoal" maxlength="200" class="form-control" placeholder="${pregoalScript}"  title="${pregoalScriptTitle}"/>
+                <form:errors path="pregoal" class="form-control control-label form-input-error"/>              
+        </div>
+    </spring:bind>
+ 
+    <spring:bind path="postgoal">
+        <div class="input-group ${status.error ? 'has-error' : ''}">
+            <span class="input-group-addon"><i class="glyphicon glyphicon-font"></i>&nbsp;&nbsp;<spring:message code='project.postgoalScript'/></span>            
+                <form:input path="postgoal" id="postgoal" maxlength="200" class="form-control" placeholder="${postgoalScript}"  title="${postgoalScriptTitle}"/>
+                <form:errors path="postgoal" class="form-control control-label form-input-error"/>              
+        </div>
+    </spring:bind>
+        
+    <spring:bind path="propertiesfolder">
+        <div class="input-group ${status.error ? 'has-error' : ''}">
+            <span class="input-group-addon"><i class="glyphicon glyphicon-font"></i>&nbsp;&nbsp;<spring:message code='project.properties'/></span>            
+                <form:input path="propertiesfolder" id="propertiesfolder" maxlength="50" class="form-control" placeholder="${properties}"  title="${propertiesTitle}"/>
+                <form:errors path="propertiesfolder" class="form-control control-label form-input-error"/>              
+        </div>
+    </spring:bind>
+   
+    <spring:bind path="sharedlib">
+        <div class="input-group ${status.error ? 'has-error' : ''}">
+            <span class="input-group-addon"><i class="glyphicon glyphicon-font"></i>&nbsp;&nbsp;<spring:message code='project.sharedLibrarySeparator'/></span>            
+                <form:input path="sharedlib" id="sharedlib" maxlength="50" class="form-control" placeholder="${sharedLibrarySeparator}"  title="${sharedLibrarySeparatorTitle}"/>
+                <form:errors path="sharedlib" class="form-control control-label form-input-error"/>              
+        </div>
+    </spring:bind>
+
+    <spring:bind path="serverStartTimeout">
+        <div class="input-group ${status.error ? 'has-error' : ''}">
+            <span class="input-group-addon"><i class="glyphicon glyphicon-font"></i>&nbsp;&nbsp;<spring:message code='project.serverStartTimeout'/></span>            
+                <form:input path="serverStartTimeout" id="serverStartTimeout" maxlength="5" class="form-control" placeholder="${serverStartTimeout}"  title="${serverStartTimeoutTitle}"/>
+                <form:errors path="serverStartTimeout" class="form-control control-label form-input-error"/>              
+        </div>
+    </spring:bind>
+    
+    <spring:bind path="syncdelay">
+        <div class="input-group ${status.error ? 'has-error' : ''}">
+            <span class="input-group-addon"><i class="glyphicon glyphicon-font"></i>&nbsp;&nbsp;<spring:message code='project.syncDelay'/></span>            
+                <form:input path="syncdelay" id="syncdelay" maxlength="5" class="form-control" placeholder="${syncDelay}"  title="${syncDelayTitle}"/>
+                <form:errors path="syncdelay" class="form-control control-label form-input-error"/>              
+        </div>
+    </spring:bind>
+    
+    <spring:bind path="ejb">
+        <div class="input-group">  
+            <span class="input-group-addon formSelect">
+                <c:choose>
+                    <c:when test="${projectForm.ejb}"><i id="activeIconEjb" class="glyphicon glyphicon-ok"></i>&nbsp;&nbsp;</c:when>
+                    <c:otherwise><i id="activeIconEjb" class="glyphicon glyphicon-remove"></i>&nbsp;&nbsp;</c:otherwise>
+                </c:choose>                
+                <spring:message code='project.ejbOnly'/></span>            
+            <form:select path="ejb" class="form-control selectpicker" id="ejb" onchange="changeClass('activeIconEjb', this.value)">
+                <form:options items="${ejbItems}"  itemValue="value" itemLabel="label"/>
+            </form:select>  
+        </div>
+    </spring:bind>
+    
+   <spring:bind path="generateWebserverPlugin">
+        <div class="input-group">  
+            <span class="input-group-addon formSelect">
+                <c:choose>
+                    <c:when test="${projectForm.generateWebserverPlugin == 'Y'}"><i id="activeIconPlugin" class="glyphicon glyphicon-ok"></i>&nbsp;&nbsp;</c:when>
+                    <c:otherwise><i id="activeIconPlugin" class="glyphicon glyphicon-remove"></i>&nbsp;&nbsp;</c:otherwise>
+                </c:choose>                
+                <spring:message code='project.generatePlugin'/></span>            
+            <form:select path="generateWebserverPlugin" class="form-control selectpicker" id="generateWebserverPlugin" onchange="changeClass('activeIconPlugin', this.value)">
+                <form:options items="${pluginItems}"  itemValue="key" itemLabel="label"/>
+            </form:select>  
+        </div>
+    </spring:bind>
+
+    <div class="input-group">        
+        <div class="submitButton">
+            <button type="button" id="addProjectButton" class="btn btn-secondary" onclick="saveEntity('#projectForm', '/saveWebsphereProject', 'ADD', 2)"><spring:message code='button.submit'/></button>
+        </div>
+    </div>
+</form:form>   
+    
+</div>
+
+</div>
+
+
