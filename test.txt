@@ -1,3 +1,7 @@
+<style onload="setSearchDateFilterPicker('#searchDateFilterFrom', '#searchDateFilterTo');">
+
+</style>
+
 /* ********** appDeployer.js ********** */
 
 function setPickerAndActiveDeployment(dateVar, activeDeplId) 
