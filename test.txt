@@ -1,23 +1,306 @@
-global.makeChoice=Faites un choix
-global.add=Ajouter
-global.addall=Ajouter tout
-global.remove=Retirer
-global.removeall=Retirer tout
-global.up=Haut
-global.down=Bas
-global.edit=Éditer
-global.update=Mettre à jour
-global.delete=Détruire
-global.cancel=Annuler
-global.previous=Précédent
-global.next=Suivant
-global.proceed=Procéder
-global.key=Clef
-global.value=Valuer
-global.unlink=Dissocier
-global.from=De
-global.to=À
-global.fileType=Type de fichiers
-global.ears=Ears
-global.props=Props
-global.action=Action
+package com.intact.rmtools.dto.websphere;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
+import org.springframework.format.annotation.DateTimeFormat;
+
+import com.intact.rmtools.model.websphere.Deployment;
+
+public class SingleDeploymentForm 
+{
+	private Deployment deployment;
+	private String deploymentRequesterName;
+	private String deploymentSupportName;
+	private String deploymentEnvTypeName;
+	private String deploymentNodeName;
+	private String deploymentEnvLabel;
+	private String deploymentProjectName;
+	private String deploymentRuntime;
+
+	// If the deployment was part of a queue set the queueID
+	Long queueId;
+	
+	@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+	private LocalDate searchDateFilterFrom = LocalDate.now().withDayOfMonth(1);
+	
+	@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+	private LocalDate searchDateFilterTo = LocalDate.now().withDayOfMonth(1).plusMonths(1);
+
+	private String searchDeploymentId;
+	private Long searchProject;
+	private Long searchNode;
+	private Long searchEnvironment;
+	private String searchRequester;
+	private String searchStatus;
+	
+	public SingleDeploymentForm() {}
+	
+	/**
+	 * Set the SingleDeploymentForm deployment fields.
+	 * This is when ApplicationDeployerForm is use as a Deployment DTO
+	 * 
+	 * @param deployment
+	 * @param deploymentRequesterName
+	 * @param deploymentSupportName
+	 * @param deploymentEnvTypeName
+	 * @param deploymentNodeName
+	 * @param deploymentEnvLabel
+	 * @param deploymentProjectName
+	 */
+	public SingleDeploymentForm(Deployment deployment, String deploymentRequesterName, String deploymentSupportName,
+			String deploymentEnvTypeName, String deploymentNodeName, String deploymentEnvLabel, String deploymentProjectName) 
+	{
+		setDeployment(deployment);
+		setDeploymentRequesterName(deploymentRequesterName);
+		setDeploymentSupportName(deploymentSupportName);
+		setDeploymentEnvTypeName(deploymentEnvTypeName);
+		setDeploymentNodeName(deploymentNodeName);
+		setDeploymentEnvLabel(deploymentEnvLabel);
+		setDeploymentProjectName(deploymentProjectName);
+	}
+
+	/**
+	 * Set the SingleDeploymentForm deployment fields.
+	 * This is when ApplicationDeployerForm is use as a Deployment DTO
+	 * 
+	 * @param deployment
+	 * @param deploymentRequesterName
+	 * @param deploymentSupportName
+	 * @param deploymentEnvTypeName
+	 * @param deploymentNodeName
+	 * @param deploymentEnvLabel
+	 * @param deploymentProjectName
+	 */
+	public SingleDeploymentForm(Deployment deployment, String deploymentRequesterName, String deploymentSupportName,
+			String deploymentEnvTypeName, String deploymentNodeName, String deploymentEnvLabel, String deploymentProjectName, String deploymentRuntime) 
+	{
+		setDeployment(deployment);
+		setDeploymentRequesterName(deploymentRequesterName);
+		setDeploymentSupportName(deploymentSupportName);
+		setDeploymentEnvTypeName(deploymentEnvTypeName);
+		setDeploymentNodeName(deploymentNodeName);
+		setDeploymentEnvLabel(deploymentEnvLabel);
+		setDeploymentProjectName(deploymentProjectName);
+		setDeploymentRuntime(deploymentRuntime);
+	}
+	
+	/**
+	 * Set the SingleDeploymentForm deployment fields.
+	 * This is when ApplicationDeployerForm is use as a Deployment DTO
+	 * 
+	 * @param deployment
+	 * @param deploymentRequesterName
+	 * @param deploymentEnvTypeName
+	 * @param deploymentNodeName
+	 * @param deploymentEnvLabel
+	 * @param deploymentProjectName
+	 */
+	public SingleDeploymentForm(Deployment deployment, String deploymentRequesterName, 
+			String deploymentEnvTypeName, String deploymentNodeName, String deploymentEnvLabel, String deploymentProjectName) 
+	{
+		setDeployment(deployment);
+		setDeploymentRequesterName(deploymentRequesterName);
+		setDeploymentEnvTypeName(deploymentEnvTypeName);
+		setDeploymentNodeName(deploymentNodeName);
+		setDeploymentEnvLabel(deploymentEnvLabel);
+		setDeploymentProjectName(deploymentProjectName);
+	}
+
+	public Deployment getDeployment() {
+		return deployment;
+	}
+
+	public void setDeployment(Deployment deployment) {
+		this.deployment = deployment;
+	}
+
+	public String getDeploymentRequesterName() {
+		return deploymentRequesterName;
+	}
+
+	public void setDeploymentRequesterName(String deploymentRequesterName) {
+		this.deploymentRequesterName = deploymentRequesterName;
+	}
+
+	public String getDeploymentSupportName() {
+		return deploymentSupportName;
+	}
+
+	public void setDeploymentSupportName(String deploymentSupportName) {
+		this.deploymentSupportName = deploymentSupportName;
+	}
+
+	public String getDeploymentEnvTypeName() {
+		return deploymentEnvTypeName;
+	}
+
+	public void setDeploymentEnvTypeName(String deploymentEnvTypeName) {
+		this.deploymentEnvTypeName = deploymentEnvTypeName;
+	}
+
+	public String getDeploymentNodeName() {
+		return deploymentNodeName;
+	}
+
+	public void setDeploymentNodeName(String deploymentNodeName) {
+		this.deploymentNodeName = deploymentNodeName;
+	}
+
+	public String getDeploymentEnvLabel() {
+		return deploymentEnvLabel;
+	}
+
+	public void setDeploymentEnvLabel(String deploymentEnvLabel) {
+		this.deploymentEnvLabel = deploymentEnvLabel;
+	}
+
+	public String getDeploymentProjectName() {
+		return deploymentProjectName;
+	}
+
+	public void setDeploymentProjectName(String deploymentProjectName) {
+		this.deploymentProjectName = deploymentProjectName;
+	}
+
+	public String getDeploymentRuntime() {
+		return deploymentRuntime;
+	}
+
+	public void setDeploymentRuntime(String deploymentRuntime) {
+		this.deploymentRuntime = deploymentRuntime;
+	}
+
+	public Long getQueueId() {
+		return queueId;
+	}
+
+	public void setQueueId(Long queueId) {
+		this.queueId = queueId;
+	}
+
+	// ================================================== SEARCH FIELDS	
+	public LocalDate getSearchDateFilterFrom() {
+		if (searchDateFilterFrom == null)
+			searchDateFilterFrom = LocalDate.now();
+			
+		return  searchDateFilterFrom;
+	}
+
+	public void setSearchDateFilterFrom(LocalDate searchDateFilterFrom) {
+		this.searchDateFilterFrom = searchDateFilterFrom;
+	}
+
+	public LocalDate getSearchDateFilterTo() {
+		if (searchDateFilterTo == null)
+			searchDateFilterTo = LocalDate.now().plusMonths(1);
+		
+		return searchDateFilterTo;
+	}
+
+	public void setSearchDateFilterTo(LocalDate searchDateFilterTo) {
+		this.searchDateFilterTo = searchDateFilterTo;
+	}
+
+	private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+	public String getSearchDateFilterFromFormatted() {
+		return dtf.format(searchDateFilterFrom);
+	}
+
+	public String getSearchDateFilterToFormatted() {
+		return dtf.format(searchDateFilterTo);
+	}
+	
+	public String getSearchDeploymentId() {
+		return searchDeploymentId;
+	}
+
+	public void setSearchDeploymentId(String searchDeploymentId) {
+		this.searchDeploymentId = searchDeploymentId;
+	}
+
+	public Long getSearchProject() {
+		return searchProject;
+	}
+
+	public void setSearchProject(Long searchProject) {
+		this.searchProject = searchProject;
+	}
+			
+	public Long getSearchNode() {
+		return searchNode;
+	}
+
+	public void setSearchNode(Long searchNode) {
+		this.searchNode = searchNode;
+	}
+
+	public Long getSearchEnvironment() {
+		return searchEnvironment;
+	}
+
+	public void setSearchEnvironment(Long searchEnvironment) {
+		this.searchEnvironment = searchEnvironment;
+	}
+
+	public String getSearchRequester() {
+		return searchRequester;
+	}
+
+	public void setSearchRequester(String searchRequester) {
+		this.searchRequester = searchRequester;
+	}
+	
+	public String getSearchStatus() {
+		return searchStatus;
+	}
+
+	public void setSearchStatus(String searchStatus) {
+		this.searchStatus = searchStatus;
+	}
+
+	// ================================================== SEARCH FIELDS
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((deploymentNodeName == null) ? 0 : deploymentNodeName.hashCode());
+		result = prime * result + ((deploymentProjectName == null) ? 0 : deploymentProjectName.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		
+		SingleDeploymentForm other = (SingleDeploymentForm) obj;
+		if (deploymentNodeName == null) {
+			if (other.deploymentNodeName != null)
+				return false;
+		} else if (!deploymentNodeName.equals(other.deploymentNodeName))
+			return false;
+		if (deploymentProjectName == null) {
+			if (other.deploymentProjectName != null)
+				return false;
+		} else if (!deploymentProjectName.equals(other.deploymentProjectName))
+			return false;
+		
+		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "SingleDeploymentForm [deployment=" + deployment + ", deploymentRequesterName=" + deploymentRequesterName
+				+ ", deploymentSupportName=" + deploymentSupportName + ", deploymentEnvTypeName="
+				+ deploymentEnvTypeName + ", deploymentNodeName=" + deploymentNodeName + ", deploymentEnvLabel="
+				+ deploymentEnvLabel + ", deploymentProjectName=" + deploymentProjectName + ", searchDateFilterFrom="
+				+ searchDateFilterFrom + ", searchDateFilterTo=" + searchDateFilterTo + ", queueId=" + queueId +"]";
+	}
+
+}
