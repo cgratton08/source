@@ -1,577 +1,228 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1" pageEncoding="ISO-8859-1"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<!-- jsp/websphere/deployerInterface/deploymentHistory/singleDeploymentList.jsp -->
+
+<div id="containerData">
+<p class="containerDataTitle"><spring:message code="deploymentHistory.single.page.title"/></p>
+<hr>
+
+<spring:message code="deploymentHistory.updateStatusFailed" var="statusFailed"/>
+<spring:message code="deploymentHistory.updateStatusSuccess" var="statusSuccess"/>
+<spring:message code="deploymentHistory.details.title" var="deploymentHistoryDetailsTitle"/>
+<spring:message code="deploymentHistory.log.title" var="deploymentHistoryLogTitle"/>
+<spring:message code="deploymentHistory.id" var="id"/>
+<spring:message code="deploymentHistory.dateTime" var="dateTime"/>             
+<spring:message code="deploymentHistory.project" var="project"/>
+<spring:message code="deploymentHistory.node" var="node"/>
+<spring:message code="deploymentHistory.nodeLabel" var="nodeLabel"/>
+<spring:message code="deploymentHistory.earFile" var="earFile"/>
+<spring:message code="deploymentHistory.properties" var="properties"/>
+<spring:message code="deploymentHistory.runtime" var="runtime"/>
+<spring:message code="deploymentHistory.env" var="env"/>
+<spring:message code="deploymentHistory.status" var="status"/>
+<spring:message code="deploymentHistory.requester" var="requester"/>
+<spring:message code="deploymentHistory.search.byidonly" var="searchById"/>
+<spring:message code="deploymentHistory.search.title" var="searchTitle"/>
+
 <style onload="setSearchDateFilterPicker('#searchDateFilterFrom', '#searchDateFilterTo');">
 
 </style>
 
-/* ********** appDeployer.js ********** */
+<c:if test="${not empty errorMessage}">
+<div class="error">Error:  ${errorMessage}</div>
+</c:if>
+<div id="error"></div>
+<div id="form-wrapper">
 
-function setPickerAndActiveDeployment(dateVar, activeDeplId) 
-{
-	var val = $(dateVar).val();
-	if ($(dateVar).val() == '') {
-		$('#datepicker').datetimepicker({format: 'YYYY-MM-DD', minDate: new Date().setHours(0,0,0,0), defaultDate: new Date()});
-	} else {
-		$('#datepicker').datetimepicker({format: 'YYYY-MM-DD', minDate: new Date().setHours(0,0,0,0)});
-	}
-	
-	// For some reason datetimepicker erase the date if it is present in the field when validation occur
-	if (val != '') {
-		$(dateVar).val(val);
-	}
-	
-	$('#timepicker').datetimepicker({format: 'HH:mm', stepping: 5});
-	
-	// Set the active Deployment in the editQueue.jsp page
-	activeDeploymentId = $(activeDeplId).val();
-	if (activeDeploymentId == undefined || activeDeploymentId == '') {
-		setActiveDeployment($('.editDeployment').first().attr('id'));
-	} else {
-		setActiveDeployment(activeDeploymentId);
-	}
-}
+<form:form id="deplHistoryForm" modelAttribute="singleDeploymentForm" method="post">
 
-var activeDeploymentId = '';
-function setActiveDeployment(deploymentId)
-{
-	if (deploymentId == undefined) { return; }
+	<div class="search">
+
+	    <spring:bind path="searchDateFilterFrom">
+	    <div class="input-group date queueEdit" id='searchDatePickerFrom' style="width: 270px; float: left; margin-right: 15px;">
+	    	<span class="input-group-addon" style="min-width: 100px; font-size: 11.5px;"><i class="glyphicon glyphicon-asterisk"></i>&nbsp;&nbsp;<spring:message code='global.from'/></span> 
+	        <form:input path="searchDateFilterFrom" id="searchDateFilterFrom" style="font-size: 11.5px;" maxlength="10" class="form-control" placeholder="${singleDeploymentForm.searchDateFilterFromFormatted}"/>
+	        <span class="input-group-addon" style="min-width: 40px; text-align: right;">
+	        	<span class="glyphicon glyphicon-calendar"></span>
+	        </span>            
+	    </div>
+	    </spring:bind> 
+	
+	    <spring:bind path="searchDateFilterTo">
+	    <div class="input-group date queueEdit" id='searchDatePickerTo' style="width: 270px; float: left;">
+	    	<span class="input-group-addon" style="min-width: 100px; font-size: 11.5px;"><i class="glyphicon glyphicon-asterisk"></i>&nbsp;&nbsp;<spring:message code='global.to'/></span> 
+	        <form:input path="searchDateFilterTo" id="searchDateFilterTo" style="font-size: 11.5px;" maxlength="10" class="form-control" placeholder="${singleDeploymentForm.searchDateFilterToFormatted}"/>
+	        <span class="input-group-addon" style="min-width: 40px; text-align: right;">
+	        	<span class="glyphicon glyphicon-calendar"></span>
+	        </span>            
+	    </div>
+	    </spring:bind>
+	    
+	    <div class="searchBoxButton" lang="${pageContext.response.locale}">        
+	        <div class="submitButton">
+	            <button type="button" id="processAppDeployerButton" class="btn btn-secondary-search" style=" padding: 3px 5px; font-size: 11.5px;" onclick="postUrl('#deplHistoryForm', '/displayWebsphereSingleDeployment', 'desc', 1, true)"><spring:message code='button.search'/></button>
+	        </div>
+	    </div>
 		
-	$('#'+ deploymentId).css("color", "white");
-	$('#'+ deploymentId).css("background-color", "#aacae6");
-	
-	activeDeploymentId = deploymentId;
-}
-
-function setSearchDateFilterPicker(dateFrom, dateTo)
-{	
-	$('#searchDatePickerFrom').datetimepicker({	format: 'YYYY-MM-DD', minDate: moment().subtract(25, 'years') });
-	$('#searchDatePickerTo').datetimepicker({ format: 'YYYY-MM-DD', minDate: moment().subtract(25, 'years') });
-}
-
-function setSearchDSLHistoryPicker(dateFrom, dateTo) 
-{	
-	$('#searchDSLHistoryPickerFrom').datetimepicker({	format: 'YYYY-MM-DD', minDate: moment().subtract(20, 'years') });
-	$('#searchDSLHistoryPickerTo').datetimepicker({ format: 'YYYY-MM-DD', minDate: moment().subtract(20, 'years') });
-}
-
-function applicationDeployerLocalDateChange()
-{	
-	var today = new Date();
-	today.setHours(0,0,0,0);
-	
-	var date = new Date($('#datepicker').data("DateTimePicker").date());
-	date.setHours(0,0,0,0);
-	
-	if (date.getTime() === today.getTime()) {
-		
-		$('#appDeployerLocalTime').val('');
-		$('#appDeployerLocalTime').attr('placeholder', 'Now');
-	} 
-	else if ($('#appDeployerLocalTime').val() == '') {
-		$('#appDeployerLocalTime').val('00:00');
-	}
-}
-
-function getEditQueueActiveDeployment(formSubmit, url, nodeName, deploymentId)
-{
-	$.when(isAuthenticated()).then
-	(
-		function(data, textStatus, jqXHR) 
-		{	
-			var formData = $(formSubmit).serializeArray();
-			formData.push(
-				{name : 'deploymentId',value : deploymentId},
-				{name : 'nodeName',value : nodeName}				
-			);
-	
-			blockUI();
+		<i class="glyphicon glyphicon-plus" style="margin-left: 95px;" onclick="deploymentHistorySearchBox();" title="${searchTitle}"></i>
+		<div id="searchForm" style="visibility: visible; display: none;">
+			<br>
+				<spring:bind path="searchProject">
+		        <div class="input-group">
+		            <span class="input-group-addon" style="min-width: 150px;"><i class="glyphicon glyphicon-asterisk"></i>&nbsp;&nbsp;<spring:message code='deploymentHistory.project'/></span>
+		            <form:select path="searchProject" class="form-control" style="width: 405px;" id="searchProject">
+		                <form:option value="-1" label="${makeChoice}"></form:option>
+		                <form:options items="${projectItems}" itemValue="project" itemLabel="name"/>               
+		            </form:select>               
+		        </div>
+		    	</spring:bind>    
+			<br>
+				<spring:bind path="searchNode">
+		        <div class="input-group">
+		            <span class="input-group-addon" style="min-width: 150px;"><i class="glyphicon glyphicon-asterisk"></i>&nbsp;&nbsp;<spring:message code='deploymentHistory.nodeLabel'/></span>
+		            <form:select path="searchNode" class="form-control" style="width: 405px;" id="searchNode">
+		                <form:option value="-1" label="${makeChoice}"></form:option>
+		                <form:options items="${nodeItems}" itemValue="environment" itemLabel="label"/>               
+		            </form:select>
+		        </div>
+		    	</spring:bind>    
+			<br>
+				<spring:bind path="searchEnvironment">
+		        <div class="input-group">
+		            <span class="input-group-addon" style="min-width: 150px;"><i class="glyphicon glyphicon-asterisk"></i>&nbsp;&nbsp;<spring:message code='deploymentHistory.env'/></span>
+		            <form:select path="searchEnvironment" class="form-control" style="width: 405px;" id="searchEnvironment">
+		                <form:option value="-1" label="${makeChoice}"></form:option>
+		                <form:options items="${environmentItems}" itemValue="environmentType" itemLabel="envName"/>               
+		            </form:select>
+		        </div>
+		    	</spring:bind>    
+			<br>
+				<spring:bind path="searchRequester">
+		        <div class="input-group">
+		            <span class="input-group-addon" style="min-width: 150px;"><i class="glyphicon glyphicon-asterisk"></i>&nbsp;&nbsp;<spring:message code='deploymentHistory.requester'/></span>
+		            <form:select path="searchRequester" class="form-control" style="width: 405px;" id="searchRequester">
+		                <form:option value="-1" label="${makeChoice}"></form:option>
+		                <form:options items="${userItems}" itemValue="userList" itemLabel="name"/>               
+		            </form:select>
+		        </div>
+		    	</spring:bind>    
+			<br>
+				<spring:bind path="searchDeploymentId">
+		        <div class="input-group">
+		            <span class="input-group-addon" style="min-width: 150px; background-color: var(--mainColor); color: white;"><i class="glyphicon glyphicon-font" style="color: white;"></i>&nbsp;&nbsp;<spring:message code='deploymentHistory.id'/></span>
+		             <form:input path="searchDeploymentId" id="searchDeploymentId" maxlength="50" class="form-control" style="width: 405px;" placeholder="${searchById}"/>              
+		        </div>
+		    	</spring:bind>
+		</div>
+	    	    
+    </div>
+   
+  <div class="tab-content">
+    <table id="tblLinkedProjects" class="table table-striped table-bordered filterable">
+        <thead>
+            <tr>
+              <th scope="col" style="width: 25px;" class="no-sort"><spring:message code="deploymentHistory.details"/></th>
+	          <th scope="col"><input type="text" placeholder="${id}"></th>
+	          <th scope="col"><input type="text" placeholder="${dateTime}"></th>
+	          <th scope="col"><input type="text" placeholder="${project}"></th>
+	          <th scope="col"><input type="text" placeholder="${nodeLabel}"></th>
+	          <th scope="col"><input type="text" placeholder="${earFile}"></th>
+	          <th scope="col"><input type="text" placeholder="${properties}"></th>
+	          <th scope="col"><input type="text" placeholder="${runtime}"></th>
+	          <th scope="col"><input type="text" placeholder="${env}"></th>
+	          <th scope="col"><input type="text" placeholder="${status}"></th>
+              <th scope="col"><spring:message code="deploymentHistory.updateStatus"/></th>
+              <th scope="col"><input type="text" placeholder="${requester}"></th>
+              <th scope="col" class="no-sort"><spring:message code="deploymentHistory.log"/></th>                                       
+            </tr>
+          </thead>
+ 
+          <tbody>
+			<c:forEach var="sdi" items="${singleDeploymentItems}">
+			<tr>
+			<td style="text-align: center; vertical-align: middle;"><a href="javascript: loadModalDetails('/displayWebsphereSingleDeploymentDetails/${sdi.deployment}', '#detailsModal', '${deploymentHistoryDetailsTitle}')"><span class="glyphicon glyphicon-list-alt"></span></a></td>
+			<td>${sdi.deployment}</td>
+			<td><fmt:formatDate value="${sdi.dateTime}" pattern="yyyy-MM-dd HH:mm:ss" /></td>			
+			<td>${sdi.project.name}</td>
+			<td>${sdi.environment.label}<span style="float:right; font-size: 15px;" title="NODE: ${sdi.environment.node}"><i class="glyphicon glyphicon-option-horizontal"></i></span></td>
+			<td>${sdi.earFileName}</td>
+			<td>${sdi.propsFileName}</td>
+			<td>${sdi.environment.runtimeVersions.label}</td>			
+			<td>${sdi.environment.environmentType.envName}</td>
+			<td id="status${sdi.deployment}">${sdi.status}</td>
 			
-			$.post(
-			{
-				url : url,
-				data : formData,
-				success : function(data) {
-					$(".container").html($('#containerData', data));
-				},
-				error : function(xhr, text, error) {
-					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
-				}
-			}).done(function() {				
-				setActiveDeployment(deploymentId);
-			});	
-			
-			unblockUI();
-		}
-	);
-}
+			<td align="center">
+				<a href="javascript: updateSingleDeploymentStatus('#deplHistoryForm', '/updateWebsphereSingleDeploymentStatus/${sdi.deployment}/failed', ${sdi.deployment})"><span class="glyphicon glyphicon-remove" style="color: firebrick; padding-right: 5px;" title="${statusFailed}"></span></a>
+				<b> / </b>
+				<a href="javascript: updateSingleDeploymentStatus('#deplHistoryForm', '/updateWebsphereSingleDeploymentStatus/${sdi.deployment}/success', ${sdi.deployment})"><span class="glyphicon glyphicon-ok" style="color: green; padding-left: 5px;"  title="${statusSuccess}"></span></a>
+			</td>
+			<td>${sdi.userList.name}</td>
+			<td style="text-align: center; vertical-align: middle;"><a href="javascript: loadModalDetails('/displayWebsphereSingleDeploymentLogs/${sdi.deployment}', '#logModal', '${deploymentHistoryLogTitle}')"><span class="glyphicon glyphicon-list-alt"></span></a></td>
+			</tr>
+			</c:forEach>
+          </tbody>
+          <tfoot>
+	       <tr>
+	           <th></th>
+	           <th><input type="text" placeholder="${id}"></th>
+	           <th><input type="text" placeholder="${dateTime}"></th>
+	           <th><input type="text" placeholder="${project}"></th>
+	           <th><input type="text" placeholder="${nodeLabel}"></th>
+	           <th><input type="text" placeholder="${earFile}"></th>
+	           <th><input type="text" placeholder="${properties}"></th>
+	           <th><input type="text" placeholder="${runtime}"></th>
+	           <th><input type="text" placeholder="${env}"></th>
+	           <th><input type="text" placeholder="${status}"></th>
+	           <th></th>
+	           <th><input type="text" placeholder="${requester}"></th>
+	           <th></th>	           
+	       </tr>
+	   	  </tfoot>                              
+     </table>
+  </div>
+   
+</form:form>   
+   
+</div>
 
-/**
- * If DeploymentNatureEnum.SINGLE is chosen <br>
- * <ul>
-	*   <li>Hides target queue menu (done from xhtml page)</li>
-	*   <li>Unhides date of deployment calendar (done from xhtml page)</li>
-	*   <li>Unhides time of deployment menu (done from xhtml page)</li>
-	*   <li>Reset all other listboxes except env</li>
-	* </ul>
-	* <br> Else if DeploymentNatureEnum.QUEUE is chosen <br>
-	* <ul>
-	*   <li>Populates queue menu content</li>
-	*   <li>Unhides target queue menu (done from xhtml page)</li>
-	*   <li>Hides date of deployment calendar (done from xhtml page)</li>
-	*   <li>Hides time of deployment menu (done from xhtml page)</li>
-	*   <li>Reset all other listboxes except env</li>
- * </ul>
- * @returns
- */
-function handleAppDeployerNatureChange(nature)
-{
-	if (nature == 'QUEUE') {
-						
-		handleDeployTargetValueChange(nature, -1)
-		loadListToTarget('#appDeployerForm', '/loadWebsphereAppDeployerQueues', '#appDeployerTarget', 'deploymentsqueue', 'queueName');	
-		
-	} else {
-						
-		handleDeployTargetValueChange(nature, -1)		
-	}
-	
-	resetAppDeployerForm('#appDeployerForm', true);
-}
 
-function handleDeployTargetValueChange(nature, queueId)
-{	
-	if (nature == 'QUEUE') {
-	
-		$('#appDeployerTarget').prop('disabled', '');	
-		$('#appDeployerLocalDate').prop('disabled', 'true');
-		$('#appDeployerLocalTime').prop('disabled', 'true');
+<div class="modal fade" id="detailsModal" tabindex="-1" role="dialog" aria-labelledby="" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="width: 700px;">
+    <div class="modal-content">
+      <div class="modal-header">        
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="modalTitle"></h4>
+      </div>
+      
+      	<div class="modal-body"></div>
+      
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal"><spring:message code='button.close'/></button>
+      </div>
+    </div>
+  </div>
+</div>
 
-		$('[name=environmentType]').val( -1 );
-		if (queueId == -1) {			
-			$('#environmentType').prop('disabled', '');
-		} else {
-			$('#environmentType').prop('disabled', 'true');
-		}		
-
-		$('#appDeployerProject').prop('disabled', 'true');
-		$('#appDeployerNode').prop('disabled', 'true');
-		$('#appDeployerEarFile').prop('disabled', 'true');
-		$('#appDeployerPropsFile').prop('disabled', 'true');
-		
-		$('#appDeployerUser' + " option").remove();
-		$('#appDeployerUser').prop('disabled', 'true');
-		
-	} else {
-		
-		$('#appDeployerTarget').prop('disabled', 'true');
-		$('#appDeployerTarget' + " option:gt(0)").remove();
-		$('#appDeployerLocalDate').prop('disabled', '');
-		$('#appDeployerLocalTime').prop('disabled', '');
-		
-		$('[name=environmentType]').val( -1 );
-		$('#environmentType').prop('disabled', '');
-
-		$('#appDeployerProject').prop('disabled', '');
-		$('#appDeployerNode').prop('disabled', '');
-		$('#appDeployerEarFile').prop('disabled', '');
-		$('#appDeployerPropsFile').prop('disabled', '');
-		$('#appDeployerUser').prop('disabled', '');
-		
-	}
-}
-
-/**
- * handleAppDeployerEnvironmentChange
- * 
- * Load the list of Projects for this Environment 
- * and set the user list allow to apply any modification 
- * 
- * @param user	The User actually login
- * @returns
- */
-function handleAppDeployerEnvironmentChange(user)
-{
-	if ($('#appDeployerNature').val() == 'SINGLE') 
-	{
-		var formData = [{name : 'envType', value : $('#appDeployerEnvironmentType').val()}];
-
-		resetAppDeployerForm('#appDeployerForm', true); 
-		loadAppDeployerSingleListToTarget(formData, '/loadWebsphereAppDeployerProjectList', '#appDeployerProject', false, 'project', 'name', '');
-		loadAppDeployerSingleListToTarget(formData, '/loadWebsphereAppDeployerUserList', '#appDeployerUser', true, 'userList', 'name', user);
-	}
-}
-
-function loadAppDeployerSingleListToTarget(formData, url, target, clearTargetOption, pValue, pText, user)
-{
-	$.when(isAuthenticated()).then
-	(
-		function(data, textStatus, jqXHR) 
-		{
-			blockUI();
-			
-			$.post(
-			{
-				url : url,
-				data : formData,
-				success : function(data) 
-				{					
-					if (clearTargetOption) {
-						$(target + " option").remove();
-					} else {
-						$(target + " option:gt(0)").remove();
-					}
-					
-					$.each(data, function(key, value) {
-						$(target).append( $("<option></option>").attr("value", value[pValue]).text(value[pText]));
-					});
-					
-					if (user != '') {
-						$(target + " option[value="+user+"]").attr('selected', 'selected');
-					}	
-				},
-				error : function(xhr, text, error) {
-					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
-				}
-			});	
-			
-			unblockUI();
-		}
-	);	
-}
-
-function loadAppDeployerListToTarget(envType, projId, url, nodeTarget, earFileTarget, propsFileTarget, pValue, pText)
-{
-	$.when(isAuthenticated()).then
-	(
-		function(data, textStatus, jqXHR) 
-		{
-			var formData = [{name : 'envType', value : $(envType).val() }, {name : 'projId', value :  $(projId).val()}];
-	
-			blockUI();
-			
-			$.post(
-			{
-				url : url,
-				data : formData,
-				success : function(data) 
-				{
-					$(nodeTarget + " option").remove();
-					
-					$.each(data['nodes'], function(key, value) {
-						$(nodeTarget).append( $("<option></option>").attr("value",	value[pValue]).text(value[pText]));
-					});
-											
-					$.each(data['earFiles'], function(key, value) {
-						$(earFileTarget).append( $("<option></option>").attr("value", value['value']).text(value['label']));
-					});
-	
-					$.each(data['propsFiles'], function(key, value) {
-						$(propsFileTarget).append( $("<option></option>").attr("value", value['value']).text(value['label']));
-					});
-	
-				},
-				error : function(xhr, text, error) { // If 40x or 50x errors
-					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
-				}
-			});	
-			
-			unblockUI();
-		}
-	);
-}
-
-/**
- * Use by the DSL Cleanup Tool.
- * Load a file list base on the form project and type parameter
- * 
- * @param formSubmit
- * @param url
- * @param target
- * @param pValue
- * @param pText
- * @returns
- */
-function loadDslCleanupFileListToTarget(formSubmit, url, target, pValue, pText) 
-{
-	$.when(isAuthenticated()).then
-	(
-		function(data, textStatus, jqXHR) 
-		{
-			var formData = $(formSubmit).serializeArray();
-	
-			blockUI();
-			
-			$.post(
-			{
-				url : url,
-				data : formData,
-				success : function(data) 
-				{
-					$('#' + target + " option").remove();
-					
-					$.each(data, function(key, value) {					
-						$('#' + target).append( $("<option></option>").attr("value", value[pValue]).text(value[pText]));
-					});
-							
-					filterfiles(target);
-				},
-				error : function(xhr, text, error) {
-					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
-				}
-			});	
-			
-			unblockUI();
-		}
-	);
-}
-
-var myFilter;
-function filterfiles(container, initial)
-{
-	myFilter = new filterlist(document.getElementById(container));
-	myFilter.set(document.getElementById('filter').value);
-}
-
-function setFileSystemUsedProgressBar(progressBar, fileSystemUsed)
-{
-	$(progressBar).text(fileSystemUsed + '%'); 
-	$(progressBar).css('width', fileSystemUsed + '%');
-	
-	if (fileSystemUsed <= 80) {
-		$(progressBar).css('color', 'white');
-		$(progressBar).css('background-color', 'green');
-	} else if (fileSystemUsed <= 90) {
-		$(progressBar).css('color', 'black');
-		$(progressBar).css('background-color', 'yellow');
-	} else {
-		$(progressBar).css('color', 'white');
-		$(progressBar).css('background-color', 'red');
-	}
-}
-
-/**
- * resetAppDeployerForm
- * 
- * Use by (Update version info) reset the form elements
- * 
- * @param formSubmit
- * @param all
- * @returns
- */
-function resetAppDeployerForm(formSubmit, all) 
-{
-	if (all) {
-		$(formSubmit + " #appDeployerProject option:gt(0)").remove();
-		$(formSubmit + " #appDeployerNode option").remove();
-		$(formSubmit + " #appDeployerEarFile option:gt(0)").remove();
-		$(formSubmit + " #appDeployerPropsFile option:gt(0)").remove();
-	} else {
-		$(formSubmit + " #appDeployerNode option").remove();
-		$(formSubmit + " #appDeployerEarFile option:gt(0)").remove();
-		$(formSubmit + " #appDeployerPropsFile option:gt(0)").remove();
-	}
-	
-	// In any case reset the version fields	
-	$(formSubmit + " #appDeployerEarFileVersion").html("");
-	$(formSubmit + " #appDeployerPropFileVersion").html("");
-	
-	// If any error class and message remove it.
-	$('.input-group.has-error').removeClass('has-error');
-	$(".form-input-error").remove();
-}
-
-function resetActiveDeployerForm(formSubmit, all) 
-{
-	if (all) {
-
-		// If Queue is empty Deployment form is disabled, reactive it
-		$(formSubmit + " #activeDeplProjectId").prop("disabled", "");
-		$(formSubmit + " #activeDeplNodeId").prop("disabled", "");
-		$(formSubmit + " #activeDeplEarFile").prop("disabled", "");
-		$(formSubmit + " #activeDeplPropsFile").prop("disabled", "");
-		$(formSubmit + " #activeDeplSupportUserId").prop("disabled", "");		
-		$(formSubmit + " #editQueueDeleteButton").prop("disabled", "");
-		$(formSubmit + " #editQueueSaveButton").prop("disabled", "");
-				
-		$(formSubmit + " #activeDeplProjectId option:first").prop("selected", "selected");
-		$(formSubmit + " #activeDeplNodeId option").remove();
-		$(formSubmit + " #activeDeplEarFile option:gt(0)").remove();
-		$(formSubmit + " #activeDeplPropsFile option:gt(0)").remove();	
-		$(formSubmit + " #activeDeplEarCurrentVersion").html("");
-		$(formSubmit + " #activeDeplPropCurrentVersion").html("");
-	} else {
-		$(formSubmit + " #activeDeplNodeId option").remove();
-		$(formSubmit + " #activeDeplEarFile option:gt(0)").remove();
-		$(formSubmit + " #activeDeplPropsFile option:gt(0)").remove();		
-		$(formSubmit + " #activeDeplEarCurrentVersion").html("");
-		$(formSubmit + " #activeDeplPropCurrentVersion").html("");
-	}
-	
-	// If any error class and message remove it.
-	$('.input-group.has-error').removeClass('has-error');
-	$(".form-input-error").remove();
-}
-
-function setCrudOperation(operation) 
-{		
-	if (operation == 'CREATE') {
-		activeDeploymentId = '';
-		$('#activeDeplId').val('');		
-	} else if ( operation == 'DELETE') {
-		activeDeploymentId = '';
-	}
-	
-	// We are in a CREATE mode but clicking the Active Deployment Save button change the crudOperation
-	// If in CREATE mode in case there is validation errors we do not want to change the crudOperation
-	var crudOperation = document.getElementById('crudOperation').value;
-	if (crudOperation == 'CREATE' && operation == 'SAVE') {
-		return;
-	}
-	document.getElementById('crudOperation').setAttribute('value', operation);
-}
-
-function validateEarVersion(currentversion,filename) 
-{
-	if (currentversion != "" && filename != "" && filename != "none") 
-	{
-		var newVersion = versionExtractor(filename);
-		if (!validateEarVersionUpgrade(currentversion,newVersion)) {
-			alert("Be careful, you're about to deploy an older version");
-		}
-	}
-}
-
-function versionExtractor(file) 
-{
-	var suffix = file.substring(file.lastIndexOf("."));
-	var version = "error";
-	var regExp4digit = /^\d+\.\d+\.\d+\.\d+$/;
-	var regExp5digit = /^\d+\.\d+\.\d+\.\d+\.\d+$/;
-	var split = file.split("-");
-	
-	for (var i = 0; i < split.length; i++) 
-	{
-		if (split[i].endsWith(suffix)) 
-		{
-			split = split[i].split(suffix);
-			if (split[0].match(regExp4digit) || split[0].match(regExp5digit)) {
-				version = split[0];
-			}		
-		}
-	}
-	return version;
-}
-
-function validateEarVersionUpgrade(currentversion,newVersion)
-{
-	var splitCurrentVersion = currentversion.split(".");
-	var splitNewVersion = newVersion.split(".");
-	if (splitNewVersion.length > splitCurrentVersion.length) {
-		return true;
-	}
-	
-	if (splitNewVersion.length < splitCurrentVersion.length) {
-		return false;
-	}
-	
-	for (var i = 0; i < splitNewVersion.length; i++)
-	{
-		if (parseInt(splitNewVersion[i]) > parseInt(splitCurrentVersion[i])) {
-			return true;
-		}
-		if (parseInt(splitNewVersion[i]) < parseInt(splitCurrentVersion[i])) {
-			return false;
-		}
-	}
-	return true;
-}
-
-/**
- * displayEarCurrentVersion
- * 
- * Specific to [Deployments / Deployer Interface / Application Deployer) display Node current version
- * 
- * @param formSubmit
- * @param id
- * @returns
- */
-function displayEarCurrentVersion(formSubmit, nodeId, projId, url, earTarget, propTarget) 
-{		
-	$.when(isAuthenticated()).then
-	(
-		function(data, textStatus, jqXHR) 
-		{
-			var formData = [{name : 'nodeId', value : $(nodeId).val() }, {name : 'projId', value :  $(projId).val()}];
-
-			$.post(
-			{
-				url : url,
-				data : formData,
-				success : function(data) 
-				{	
-					if (data == "") {
-						$(formSubmit).find(earTarget).html("");
-						$(formSubmit).find(propTarget).html("");
-					} else {
-						$(formSubmit).find(earTarget).html(data['currentVer']);
-						$(formSubmit).find(propTarget).html(data['currentVerProps']);
-					}
-				},
-				error : function(xhr, text, error) {
-					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
-				}
-			});	
-		}
-	);
-}
-
-function validateProjectIsUniqueInQueue(formSubmit, url)
-{	
-	$.when(isAuthenticated()).then
-	(
-		function(data, textStatus, jqXHR) 
-		{
-			var formData = $(formSubmit).serializeArray();
-
-			$.post({
-				url : url,
-				data : formData,
-				success : function(data) 
-				{							
-					if (data.length == 0) {
-						resetActiveDeployerForm('#editQueueForm', false); 
-						loadAppDeployerListToTarget('#deploymentsQueue\\.EnvtypeEnvironmenttype', '#activeDeplProjectId', '/loadWebsphereAppDeployerNodeList', '#activeDeplNodeId', '#activeDeplEarFile', '#activeDeplPropsFile', 'environment', 'label');													
-						$(formSubmit).find('saveDeploymentError').html("");							
-						$('#saveDeploymentError').css('display', 'none');
-					} else {
-						resetActiveDeployerForm('#editQueueForm', false);
-						$(formSubmit).find('#saveDeploymentError').html(data[0]);
-						$('#saveDeploymentError').css('display', 'block');
-					}
-				},
-				error : function(xhr, text, error) {
-					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
-				}
-			});	
-		}
-	);
-}
-
-function deleteScheduledQueueConfirmationModal(modalTarget, buttonTarget, cancelUrl, modalTitle, modalMsg) 
-{
-	$.when(isAuthenticated()).then
-	(
-		function(data, textStatus, jqXHR) 
-		{	
-			$(modalTarget).find('#modalTitle').html(modalTitle);
-			$(modalTarget).find('.modal-body').html(modalMsg);
-			$(modalTarget).modal("show");
-			
-			$(buttonTarget).attr("onclick","deleteScheduledQueue('" + cancelUrl + "','" + modalTarget + "')");
-		}
-	);
-}	
-
-function deleteScheduledQueue(cancelUrl, modalTarget) 
-{
-	postUrlNoForm(cancelUrl);
-	$(modalTarget).modal('toggle');
-}
+<div class="modal fade" id="logModal" tabindex="-1" role="dialog" aria-labelledby="" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="width: 75%; margin-top: 0px; margin-bottom: 0px">
+    <div class="modal-content">
+      <div class="modal-header">        
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="modalTitle"></h4>
+      </div>
+      
+      	<div class="modal-body" style="height: 550px; overflow-y: auto;"></div>
+      
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal"><spring:message code='button.close'/></button>
+      </div>
+    </div>
+  </div>
+</div>
+  
+  
+  
+</div>
