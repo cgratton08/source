@@ -1,346 +1,98 @@
-/* ********** common.js ********** 
- *
- *  Regroup JS functions use by all Contexts
- */
+/* ********** appDeployer.js ********** */
 
-/**
- * Set the status if a Deployment
- * 
- * @param form The form
- * @param url  The Rest Service to call
- * @param id   Id of the Entity
- * 
- * @returns Process to set the status of the Deployment in the DB context related table to success / failed
- */
-function updateSingleDeploymentStatus(formSubmit, url, id) 
+function setPickerAndActiveDeployment(dateVar, activeDeplId) 
 {
-	$.when(isAuthenticated()).then
-	(
-		function(data, textStatus, jqXHR) 
-		{
-//			blockUI();
-			var formData = $(formSubmit).serializeArray();
-
-			var elem = $('#status'+id);
-	
-			$.post(
-			{
-				url : url,
-				data : formData,
-				success : function(data) 
-				{
-					if (data.errorMessage) {
-						var errorElem = document.getElementById('error');
-						errorElem.className = 'error';
-						errorElem.innerHTML = data.errorMessage;
-						return;
-					}
-					
-					elem.text(data.deployment.status);					
-				},
-				error : function(xhr, text, error) { 
-					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
-				}
-			});
-				
-//			unblockUI();		
-		}
-	);
-}
-
-/**
- * Set the status of a Queue Deployment
- * 
- * @param form The form
- * @param url  The Rest Service to call
- * @param id   Id of the Entity
- * 
- * @returns Process to set the status of the Deployment in the DB context related table to success / failed
- */
-function updateQueueDeploymentStatus(formSubmit, url, id) 
-{
-	$.when(isAuthenticated()).then
-	(
-		function(data, textStatus, jqXHR) 
-		{
-//			blockUI();
-			var formData = $(formSubmit).serializeArray();
-
-			var elem = $('#status'+id);
-	
-			$.post(
-			{
-				url : url,
-				data : formData,
-				success : function(data) 
-				{
-					if (data.errorMessage) {
-						var errorElem = document.getElementById('error');
-						errorElem.className = 'error';
-						errorElem.innerHTML = data.errorMessage;
-						return;
-					}
-					
-					elem.text(data.deployment.status);					
-				},
-				error : function(xhr, text, error) { 
-					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
-				}
-			});
-				
-//			unblockUI();		
-		}
-	);
-}
-
-// ----------------------------------------------
-/**
- * loadValues
- * 
- * Load values related to a selection in a drop box
- * 
- * @param formSubmit
- *            The form
- * @param url
- *            The Rest service to call
- * 
- * @returns The view to the Entities Object that was created
- */
-function loadValues(formSubmit, url, orderColumn, freezeUI, userId) 
-{
-	$.when(isAuthenticated()).then
-	(
-		function(data, textStatus, jqXHR) 
-		{
-			var formData = $(formSubmit).serializeArray();
-			if (userId != undefined) {
-				formData.push({name : 'user', value : userId});
-			}
-
-			if (freezeUI == true) {
-				blockUI();
-			}
-
-			$.post(
-			{
-				url : url,
-				data : formData,
-				success : function(data) 
-				{
-					$(".container").html($('#containerData', data));
-
-					$('table').DataTable({
-						"language" : {"url" : dataTableLang},
-   						"order" : [ orderColumn, 'asc' ],
-						"columnDefs" : [ { targets : 'no-sort', orderable : false } ],
-
-						initComplete: function () 
-						{
-							// To prevent a "No matching records found" in the fileUploadForm
-							if (this.hasClass("filterable")) 
-							{
-					            // Apply the search
-					            this.api().columns().every( function () 
-								{
-					                var that = this;	
-
-				                	$( 'input', this.header() ).on( 'keyup change clear', function () {
-				                    	if ( that.search() !== this.value ) {
-				                        	that.search( this.value ).draw();
-				                    	}
-				                 	});
-		
-				                	$( 'input', this.header() ).on( 'click thead th input', function (event) {
-										event.stopPropagation();
-				                 	});
-			 
-					                $( 'input', this.footer() ).on( 'keyup change clear', function () {
-					                    if ( that.search() !== this.value ) {
-					                        that.search( this.value ).draw();
-					                    }
-					                });
-					            });
-							}
-				        },
-					});
-				},
-				error : function(xhr, text, error) {
-					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
-				}
-			});
-
-			$(formSubmit + ':focus').blur();
-		}
-	);
-}
-
-// ----------------------------------------------
-function loadRolesToEdit(url, id, freezeUI) 
-{
-	$.when(isAuthenticated()).then
-	(
-		function(data, textStatus, jqXHR) 
-		{
-			var formData = [{name : 'id', value : id}];
-
-			blockUI();
-
-			$.post(
-			{
-				url : url,
-				data : formData,
-				success : function(data) {					
-					$(".container").html($('#containerData', data));
-				},
-				error : function(xhr, text, error) {
-					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
-				}
-			});
-			
-			unblockUI();
-		}
-	);
-}
-
-/**
- * loadRoles
- * 
- * Load the roles of a particular user 
- * 
- * @param formSubmit
- *            The form
- * @param url
- *            The Rest service to call
- * @param id
- *            The select elem origin of the request [userRolesFrom, userRolesTo]
- * @param freezeUI
- *            freeze or not the UI while seraching
- * 
- * @returns The view to the Entities Object that was created
- */
-function loadRoles(formSubmit, url, id, freezeUI) 
-{
-	$.when(isAuthenticated()).then
-	(
-		function(data, textStatus, jqXHR) 
-		{
-			var formData = $(formSubmit).serializeArray();
-			formData.push({name : 'id', value : id});
-			
-			if (freezeUI == true) {
-				blockUI();
-			}
-
-			$.post(
-			{
-				url : url,
-				data : formData,
-				success : function(data) 
-				{
-					// Set button visibility
-					$("#btnUserFromDuplicate").prop("disabled", data.userFromUnknown);
-					$("#btnUserToReset").prop("disabled", data.userToUnknown);
-					$("#btnUserToAssign").prop("disabled", data.userToUnknown);
-					$("input:checkbox[name='userRolesTo']").prop("disabled", data.userToUnknown);
-					
-					// Clear the form roles checkbox
-					for (let i = 0; i < document.getElementsByName(id).length; i++) {
-						document.getElementsByName(id)[i].checked = false;						
-					}
-
-					// Set the roles
-					if (data.AssignRolesForm[id] != null)
-					{
-						for (const userRole of data.AssignRolesForm[id]) {
-							$('input:checkbox[name="' + id + '"][value="' + userRole.agroup + '"]').prop('checked',true);	
-						}
-					}
-				},
-				error : function(xhr, text, error) {
-					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
-				}
-			});
-
-			unblockUI();
-		}
-	);
-}
-
-function clearAllUserRolesTo() {
-	// Clear the form roles checkbox
-	for (let i = 0; i < document.getElementsByName("userRolesTo").length; i++) {
-		document.getElementsByName("userRolesTo")[i].checked = false;						
-	}
-}
-
-function clearUserToRoles() {
-	loadRoles('#usersUtilitiesForm', '/selectWebsphereUserRoles', 'userRolesTo', true);
-}
-
-function duplicateRoles() 
-{		
-	var selected = [];
-	$("input:checkbox[name='userRolesFrom']:checked").each(function () {
-    	selected.push($(this).attr("value"));
-    });
-		
-	let id = 'userRolesTo';
-	// Clear the form roles checkbox
-	for (let i = 0; i < document.getElementsByName('userRolesTo').length; i++) {
-		document.getElementsByName(id)[i].checked = false;						
-	}
-
-	// Set the roles
-	for (const userRole of selected) {
-		$('input:checkbox[name="userRolesTo"][value="' + userRole + '"]').prop('checked',true);						
-	}
-}
-
-function saveUserToRoles(formSubmit)
-{
-	var formData = $(formSubmit).serializeArray();
-	postCommand('/saveWebsphereUserRoles', formData, 1);
-}
-
-
-
-
-
-
-function submitReportAction(freezeUI)
-{
-	if (document.getElementById('searchCount').checked) {
-		loadReportCount('#reportingDeploymentForm', '/getReportDeploymentCount', '#reportCount', true);
+	var val = $(dateVar).val();
+	if ($(dateVar).val() == '') {
+		$('#datepicker').datetimepicker({format: 'YYYY-MM-DD', minDate: new Date().setHours(0,0,0,0), defaultDate: new Date()});
 	} else {
-		postUrl('#reportingDeploymentForm', '/searchDeploymentsReports', 'desc', 1, true);
+		$('#datepicker').datetimepicker({format: 'YYYY-MM-DD', minDate: new Date().setHours(0,0,0,0)});
 	}
 	
+	// For some reason datetimepicker erase the date if it is present in the field when validation occur
+	if (val != '') {
+		$(dateVar).val(val);
+	}
+	
+	$('#timepicker').datetimepicker({format: 'HH:mm', stepping: 5});
+	
+	// Set the active Deployment in the editQueue.jsp page
+	activeDeploymentId = $(activeDeplId).val();
+	if (activeDeploymentId == undefined || activeDeploymentId == '') {
+		setActiveDeployment($('.editDeployment').first().attr('id'));
+	} else {
+		setActiveDeployment(activeDeploymentId);
+	}
 }
 
+var activeDeploymentId = '';
+function setActiveDeployment(deploymentId)
+{
+	if (deploymentId == undefined) { return; }
+		
+	$('#'+ deploymentId).css("color", "white");
+	$('#'+ deploymentId).css("background-color", "#aacae6");
+	
+	activeDeploymentId = deploymentId;
+}
 
-function loadReportCount(formSubmit, url, id, freezeUI) 
+function setSearchDateFilterPicker(dateFrom, dateTo)
+{	
+	$('#searchDatePickerFrom').datetimepicker({	format: 'YYYY-MM-DD', minDate: moment().subtract(25, 'years') });
+	$('#searchDatePickerTo').datetimepicker({ format: 'YYYY-MM-DD', minDate: moment().subtract(25, 'years') });
+}
+
+function setSearchDSLHistoryPicker(dateFrom, dateTo) 
+{	
+	$('#searchDSLHistoryPickerFrom').datetimepicker({	format: 'YYYY-MM-DD', minDate: moment().subtract(20, 'years') });
+	$('#searchDSLHistoryPickerTo').datetimepicker({ format: 'YYYY-MM-DD', minDate: moment().subtract(20, 'years') });
+}
+
+function applicationDeployerLocalDateChange()
+{	
+	var today = new Date();
+	today.setHours(0,0,0,0);
+	
+	var date = new Date($('#datepicker').data("DateTimePicker").date());
+	date.setHours(0,0,0,0);
+	
+	if (date.getTime() === today.getTime()) {
+		
+		$('#appDeployerLocalTime').val('');
+		$('#appDeployerLocalTime').attr('placeholder', 'Now');
+	} 
+	else if ($('#appDeployerLocalTime').val() == '') {
+		$('#appDeployerLocalTime').val('00:00');
+	}
+}
+
+function getEditQueueActiveDeployment(formSubmit, url, nodeName, deploymentId)
 {
 	$.when(isAuthenticated()).then
 	(
 		function(data, textStatus, jqXHR) 
-		{
+		{	
 			var formData = $(formSubmit).serializeArray();
-
-			if (freezeUI == true) {
-				blockUI();
-			}
-
+			formData.push(
+				{name : 'deploymentId',value : deploymentId},
+				{name : 'nodeName',value : nodeName}				
+			);
+	
+			blockUI();
+			
 			$.post(
 			{
 				url : url,
 				data : formData,
-				success : function(data) {	
-					$(id).text(data['COUNT']);				
+				success : function(data) {
+					$(".container").html($('#containerData', data));
 				},
 				error : function(xhr, text, error) {
 					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
 				}
-			});
+			}).done(function() {				
+				setActiveDeployment(deploymentId);
+			});	
 			
 			unblockUI();
 		}
@@ -348,37 +100,474 @@ function loadReportCount(formSubmit, url, id, freezeUI)
 }
 
 /**
- * Call from Websphere - Management - DBManager - Utilities - Stop script
- * (listProcessingMapEdit.jsp)
- * 
+ * If DeploymentNatureEnum.SINGLE is chosen <br>
+ * <ul>
+	*   <li>Hides target queue menu (done from xhtml page)</li>
+	*   <li>Unhides date of deployment calendar (done from xhtml page)</li>
+	*   <li>Unhides time of deployment menu (done from xhtml page)</li>
+	*   <li>Reset all other listboxes except env</li>
+	* </ul>
+	* <br> Else if DeploymentNatureEnum.QUEUE is chosen <br>
+	* <ul>
+	*   <li>Populates queue menu content</li>
+	*   <li>Unhides target queue menu (done from xhtml page)</li>
+	*   <li>Hides date of deployment calendar (done from xhtml page)</li>
+	*   <li>Hides time of deployment menu (done from xhtml page)</li>
+	*   <li>Reset all other listboxes except env</li>
+ * </ul>
+ * @returns
  */
-var stopScriptExecution = function(callback)
+function handleAppDeployerNatureChange(nature)
 {
-	var dataId = '';
-	var dataName = '';
+	if (nature == 'QUEUE') {
+						
+		handleDeployTargetValueChange(nature, -1)
+		loadListToTarget('#appDeployerForm', '/loadWebsphereAppDeployerQueues', '#appDeployerTarget', 'deploymentsqueue', 'queueName');	
+		
+	} else {
+						
+		handleDeployTargetValueChange(nature, -1)		
+	}
 	
-	$(document).on('click', '#iconStopScript', function() {
-		dataId = $(this).data('id');
-		dataName = $(this).data('name')
-		$("#modalScriptId").text(dataId);
-		$("#modalScriptData").text(dataName);
-		$("#stopScriptModal").modal('show');
-	});
+	resetAppDeployerForm('#appDeployerForm', true);
+}
 
-	$(document).on('click', '#stopScriptProceed', function() {
-		callback(dataId, dataName);
-		$("#stopScriptModal").modal('hide');
-	});
+function handleDeployTargetValueChange(nature, queueId)
+{	
+	if (nature == 'QUEUE') {
+	
+		$('#appDeployerTarget').prop('disabled', '');	
+		$('#appDeployerLocalDate').prop('disabled', 'true');
+		$('#appDeployerLocalTime').prop('disabled', 'true');
 
-	$(document).on('click', '#stopScriptCancel', function() {
-		$("#stopScriptModal").modal('hide');
-	});
-};
+		$('[name=environmentType]').val( -1 );
+		if (queueId == -1) {			
+			$('#environmentType').prop('disabled', '');
+		} else {
+			$('#environmentType').prop('disabled', 'true');
+		}		
 
-stopScriptExecution(function(id, name) 
+		$('#appDeployerProject').prop('disabled', 'true');
+		$('#appDeployerNode').prop('disabled', 'true');
+		$('#appDeployerEarFile').prop('disabled', 'true');
+		$('#appDeployerPropsFile').prop('disabled', 'true');
+		
+		$('#appDeployerUser' + " option").remove();
+		$('#appDeployerUser').prop('disabled', 'true');
+		
+	} else {
+		
+		$('#appDeployerTarget').prop('disabled', 'true');
+		$('#appDeployerTarget' + " option:gt(0)").remove();
+		$('#appDeployerLocalDate').prop('disabled', '');
+		$('#appDeployerLocalTime').prop('disabled', '');
+		
+		$('[name=environmentType]').val( -1 );
+		$('#environmentType').prop('disabled', '');
+
+		$('#appDeployerProject').prop('disabled', '');
+		$('#appDeployerNode').prop('disabled', '');
+		$('#appDeployerEarFile').prop('disabled', '');
+		$('#appDeployerPropsFile').prop('disabled', '');
+		$('#appDeployerUser').prop('disabled', '');
+		
+	}
+}
+
+/**
+ * handleAppDeployerEnvironmentChange
+ * 
+ * Load the list of Projects for this Environment 
+ * and set the user list allow to apply any modification 
+ * 
+ * @param user	The User actually login
+ * @returns
+ */
+function handleAppDeployerEnvironmentChange(user)
 {
-	var formData = [{name : 'id', value : id}, {name : 'script', value : name}];
-	postCommand('/stopScriptExecution', formData, 2);
-	$('.modal-backdrop').remove();
-});
+	if ($('#appDeployerNature').val() == 'SINGLE') 
+	{
+		var formData = [{name : 'envType', value : $('#appDeployerEnvironmentType').val()}];
 
+		resetAppDeployerForm('#appDeployerForm', true); 
+		loadAppDeployerSingleListToTarget(formData, '/loadWebsphereAppDeployerProjectList', '#appDeployerProject', false, 'project', 'name', '');
+		loadAppDeployerSingleListToTarget(formData, '/loadWebsphereAppDeployerUserList', '#appDeployerUser', true, 'userList', 'name', user);
+	}
+}
+
+function loadAppDeployerSingleListToTarget(formData, url, target, clearTargetOption, pValue, pText, user)
+{
+	$.when(isAuthenticated()).then
+	(
+		function(data, textStatus, jqXHR) 
+		{
+			blockUI();
+			
+			$.post(
+			{
+				url : url,
+				data : formData,
+				success : function(data) 
+				{					
+					if (clearTargetOption) {
+						$(target + " option").remove();
+					} else {
+						$(target + " option:gt(0)").remove();
+					}
+					
+					$.each(data, function(key, value) {
+						$(target).append( $("<option></option>").attr("value", value[pValue]).text(value[pText]));
+					});
+					
+					if (user != '') {
+						$(target + " option[value="+user+"]").attr('selected', 'selected');
+					}	
+				},
+				error : function(xhr, text, error) {
+					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
+				}
+			});	
+			
+			unblockUI();
+		}
+	);	
+}
+
+function loadAppDeployerListToTarget(envType, projId, url, nodeTarget, earFileTarget, propsFileTarget, pValue, pText)
+{
+	$.when(isAuthenticated()).then
+	(
+		function(data, textStatus, jqXHR) 
+		{
+			var formData = [{name : 'envType', value : $(envType).val() }, {name : 'projId', value :  $(projId).val()}];
+	
+			blockUI();
+			
+			$.post(
+			{
+				url : url,
+				data : formData,
+				success : function(data) 
+				{
+					$(nodeTarget + " option").remove();
+					
+					$.each(data['nodes'], function(key, value) {
+						$(nodeTarget).append( $("<option></option>").attr("value",	value[pValue]).text(value[pText]));
+					});
+											
+					$.each(data['earFiles'], function(key, value) {
+						$(earFileTarget).append( $("<option></option>").attr("value", value['value']).text(value['label']));
+					});
+	
+					$.each(data['propsFiles'], function(key, value) {
+						$(propsFileTarget).append( $("<option></option>").attr("value", value['value']).text(value['label']));
+					});
+	
+				},
+				error : function(xhr, text, error) { // If 40x or 50x errors
+					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
+				}
+			});	
+			
+			unblockUI();
+		}
+	);
+}
+
+/**
+ * Use by the DSL Cleanup Tool.
+ * Load a file list base on the form project and type parameter
+ * 
+ * @param formSubmit
+ * @param url
+ * @param target
+ * @param pValue
+ * @param pText
+ * @returns
+ */
+function loadDslCleanupFileListToTarget(formSubmit, url, target, pValue, pText) 
+{
+	$.when(isAuthenticated()).then
+	(
+		function(data, textStatus, jqXHR) 
+		{
+			var formData = $(formSubmit).serializeArray();
+	
+			blockUI();
+			
+			$.post(
+			{
+				url : url,
+				data : formData,
+				success : function(data) 
+				{
+					$('#' + target + " option").remove();
+					
+					$.each(data, function(key, value) {					
+						$('#' + target).append( $("<option></option>").attr("value", value[pValue]).text(value[pText]));
+					});
+							
+					filterfiles(target);
+				},
+				error : function(xhr, text, error) {
+					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
+				}
+			});	
+			
+			unblockUI();
+		}
+	);
+}
+
+var myFilter;
+function filterfiles(container, initial)
+{
+	myFilter = new filterlist(document.getElementById(container));
+	myFilter.set(document.getElementById('filter').value);
+}
+
+function setFileSystemUsedProgressBar(progressBar, fileSystemUsed)
+{
+	$(progressBar).text(fileSystemUsed + '%'); 
+	$(progressBar).css('width', fileSystemUsed + '%');
+	
+	if (fileSystemUsed <= 80) {
+		$(progressBar).css('color', 'white');
+		$(progressBar).css('background-color', 'green');
+	} else if (fileSystemUsed <= 90) {
+		$(progressBar).css('color', 'black');
+		$(progressBar).css('background-color', 'yellow');
+	} else {
+		$(progressBar).css('color', 'white');
+		$(progressBar).css('background-color', 'red');
+	}
+}
+
+/**
+ * resetAppDeployerForm
+ * 
+ * Use by (Update version info) reset the form elements
+ * 
+ * @param formSubmit
+ * @param all
+ * @returns
+ */
+function resetAppDeployerForm(formSubmit, all) 
+{
+	if (all) {
+		$(formSubmit + " #appDeployerProject option:gt(0)").remove();
+		$(formSubmit + " #appDeployerNode option").remove();
+		$(formSubmit + " #appDeployerEarFile option:gt(0)").remove();
+		$(formSubmit + " #appDeployerPropsFile option:gt(0)").remove();
+	} else {
+		$(formSubmit + " #appDeployerNode option").remove();
+		$(formSubmit + " #appDeployerEarFile option:gt(0)").remove();
+		$(formSubmit + " #appDeployerPropsFile option:gt(0)").remove();
+	}
+	
+	// In any case reset the version fields	
+	$(formSubmit + " #appDeployerEarFileVersion").html("");
+	$(formSubmit + " #appDeployerPropFileVersion").html("");
+	
+	// If any error class and message remove it.
+	$('.input-group.has-error').removeClass('has-error');
+	$(".form-input-error").remove();
+}
+
+function resetActiveDeployerForm(formSubmit, all) 
+{
+	if (all) {
+
+		// If Queue is empty Deployment form is disabled, reactive it
+		$(formSubmit + " #activeDeplProjectId").prop("disabled", "");
+		$(formSubmit + " #activeDeplNodeId").prop("disabled", "");
+		$(formSubmit + " #activeDeplEarFile").prop("disabled", "");
+		$(formSubmit + " #activeDeplPropsFile").prop("disabled", "");
+		$(formSubmit + " #activeDeplSupportUserId").prop("disabled", "");		
+		$(formSubmit + " #editQueueDeleteButton").prop("disabled", "");
+		$(formSubmit + " #editQueueSaveButton").prop("disabled", "");
+				
+		$(formSubmit + " #activeDeplProjectId option:first").prop("selected", "selected");
+		$(formSubmit + " #activeDeplNodeId option").remove();
+		$(formSubmit + " #activeDeplEarFile option:gt(0)").remove();
+		$(formSubmit + " #activeDeplPropsFile option:gt(0)").remove();	
+		$(formSubmit + " #activeDeplEarCurrentVersion").html("");
+		$(formSubmit + " #activeDeplPropCurrentVersion").html("");
+	} else {
+		$(formSubmit + " #activeDeplNodeId option").remove();
+		$(formSubmit + " #activeDeplEarFile option:gt(0)").remove();
+		$(formSubmit + " #activeDeplPropsFile option:gt(0)").remove();		
+		$(formSubmit + " #activeDeplEarCurrentVersion").html("");
+		$(formSubmit + " #activeDeplPropCurrentVersion").html("");
+	}
+	
+	// If any error class and message remove it.
+	$('.input-group.has-error').removeClass('has-error');
+	$(".form-input-error").remove();
+}
+
+function setCrudOperation(operation) 
+{		
+	if (operation == 'CREATE') {
+		activeDeploymentId = '';
+		$('#activeDeplId').val('');		
+	} else if ( operation == 'DELETE') {
+		activeDeploymentId = '';
+	}
+	
+	// We are in a CREATE mode but clicking the Active Deployment Save button change the crudOperation
+	// If in CREATE mode in case there is validation errors we do not want to change the crudOperation
+	var crudOperation = document.getElementById('crudOperation').value;
+	if (crudOperation == 'CREATE' && operation == 'SAVE') {
+		return;
+	}
+	document.getElementById('crudOperation').setAttribute('value', operation);
+}
+
+function validateEarVersion(currentversion,filename) 
+{
+	if (currentversion != "" && filename != "" && filename != "none") 
+	{
+		var newVersion = versionExtractor(filename);
+		if (!validateEarVersionUpgrade(currentversion,newVersion)) {
+			alert("Be careful, you're about to deploy an older version");
+		}
+	}
+}
+
+function versionExtractor(file) 
+{
+	var suffix = file.substring(file.lastIndexOf("."));
+	var version = "error";
+	var regExp4digit = /^\d+\.\d+\.\d+\.\d+$/;
+	var regExp5digit = /^\d+\.\d+\.\d+\.\d+\.\d+$/;
+	var split = file.split("-");
+	
+	for (var i = 0; i < split.length; i++) 
+	{
+		if (split[i].endsWith(suffix)) 
+		{
+			split = split[i].split(suffix);
+			if (split[0].match(regExp4digit) || split[0].match(regExp5digit)) {
+				version = split[0];
+			}		
+		}
+	}
+	return version;
+}
+
+function validateEarVersionUpgrade(currentversion,newVersion)
+{
+	var splitCurrentVersion = currentversion.split(".");
+	var splitNewVersion = newVersion.split(".");
+	if (splitNewVersion.length > splitCurrentVersion.length) {
+		return true;
+	}
+	
+	if (splitNewVersion.length < splitCurrentVersion.length) {
+		return false;
+	}
+	
+	for (var i = 0; i < splitNewVersion.length; i++)
+	{
+		if (parseInt(splitNewVersion[i]) > parseInt(splitCurrentVersion[i])) {
+			return true;
+		}
+		if (parseInt(splitNewVersion[i]) < parseInt(splitCurrentVersion[i])) {
+			return false;
+		}
+	}
+	return true;
+}
+
+/**
+ * displayEarCurrentVersion
+ * 
+ * Specific to [Deployments / Deployer Interface / Application Deployer) display Node current version
+ * 
+ * @param formSubmit
+ * @param id
+ * @returns
+ */
+function displayEarCurrentVersion(formSubmit, nodeId, projId, url, earTarget, propTarget) 
+{		
+	$.when(isAuthenticated()).then
+	(
+		function(data, textStatus, jqXHR) 
+		{
+			var formData = [{name : 'nodeId', value : $(nodeId).val() }, {name : 'projId', value :  $(projId).val()}];
+
+			$.post(
+			{
+				url : url,
+				data : formData,
+				success : function(data) 
+				{	
+					if (data == "") {
+						$(formSubmit).find(earTarget).html("");
+						$(formSubmit).find(propTarget).html("");
+					} else {
+						$(formSubmit).find(earTarget).html(data['currentVer']);
+						$(formSubmit).find(propTarget).html(data['currentVerProps']);
+					}
+				},
+				error : function(xhr, text, error) {
+					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
+				}
+			});	
+		}
+	);
+}
+
+function validateProjectIsUniqueInQueue(formSubmit, url)
+{	
+	$.when(isAuthenticated()).then
+	(
+		function(data, textStatus, jqXHR) 
+		{
+			var formData = $(formSubmit).serializeArray();
+
+			$.post({
+				url : url,
+				data : formData,
+				success : function(data) 
+				{							
+					if (data.length == 0) {
+						resetActiveDeployerForm('#editQueueForm', false); 
+						loadAppDeployerListToTarget('#deploymentsQueue\\.EnvtypeEnvironmenttype', '#activeDeplProjectId', '/loadWebsphereAppDeployerNodeList', '#activeDeplNodeId', '#activeDeplEarFile', '#activeDeplPropsFile', 'environment', 'label');													
+						$(formSubmit).find('saveDeploymentError').html("");							
+						$('#saveDeploymentError').css('display', 'none');
+					} else {
+						resetActiveDeployerForm('#editQueueForm', false);
+						$(formSubmit).find('#saveDeploymentError').html(data[0]);
+						$('#saveDeploymentError').css('display', 'block');
+					}
+				},
+				error : function(xhr, text, error) {
+					$(".container").load("/globalError #containerData", JSON.parse(xhr.responseText));
+				}
+			});	
+		}
+	);
+}
+
+function deleteScheduledQueueConfirmationModal(modalTarget, buttonTarget, cancelUrl, modalTitle, modalMsg) 
+{
+	$.when(isAuthenticated()).then
+	(
+		function(data, textStatus, jqXHR) 
+		{	
+			$(modalTarget).find('#modalTitle').html(modalTitle);
+			$(modalTarget).find('.modal-body').html(modalMsg);
+			$(modalTarget).modal("show");
+			
+			$(buttonTarget).attr("onclick","deleteScheduledQueue('" + cancelUrl + "','" + modalTarget + "')");
+		}
+	);
+}	
+
+function deleteScheduledQueue(cancelUrl, modalTarget) 
+{
+	postUrlNoForm(cancelUrl);
+	$(modalTarget).modal('toggle');
+}
