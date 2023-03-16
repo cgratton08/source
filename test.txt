@@ -1,306 +1,422 @@
-package com.intact.rmtools.dto.websphere;
+package com.intact.rmtools.service;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 
-import org.springframework.format.annotation.DateTimeFormat;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
-import com.intact.rmtools.model.websphere.Deployment;
+import com.intact.rmtools.base.BaseApp;
+import com.intact.rmtools.exception.RmtoolsException;
+import com.intact.rmtools.utils.EnvironmentType;
 
-public class SingleDeploymentForm 
+@Service
+public class FileDirectoryService extends BaseApp 
 {
-	private Deployment deployment;
-	private String deploymentRequesterName;
-	private String deploymentSupportName;
-	private String deploymentEnvTypeName;
-	private String deploymentNodeName;
-	private String deploymentEnvLabel;
-	private String deploymentProjectName;
-	private String deploymentRuntime;
+	private static final Logger logger = LoggerFactory.getLogger(FileDirectoryService.class);
+	
+	public static final DecimalFormat df = new DecimalFormat("###.##");
+	
+	public static final String DEFAULT_VERSION_NUMBER = "1.0.0.0";
+	public static final String DEPLOYMENT_FILE_VERSION_FORMAT = "\\d+\\.\\d+\\.\\d+\\.\\d+";
+	public static final String DEPLOYMENT_FILE_VERSION_FORMAT_WEBSPHERE_JBOSS = "^\\d+(\\.\\d+){3,4}$";
 
-	// If the deployment was part of a queue set the queueID
-	Long queueId;
+	public static final String WEBSPHERE_APPFILE_NAMING_REGEX = "^(\\w|\\w-\\w)+-\\d+(\\.\\d+){3,5}[\\w\\.-]*(\\.ear)$";
+	public static final Pattern WEBSPHERE_APPFILE_REGEX_PATTERN = Pattern.compile(WEBSPHERE_APPFILE_NAMING_REGEX, Pattern.CASE_INSENSITIVE);
 	
-	@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-	private LocalDate searchDateFilterFrom = LocalDate.now().withDayOfMonth(1);
+	public static final String JBOSS_APPFILE_NAMING_REGEX = "^(\\w|\\w-\\w)+-\\d+(\\.\\d+){3,5}[\\w\\.-]*(\\.ear|\\.war)$";
+	public static final Pattern JBOSS_APPFILE_REGEX_PATTERN = Pattern.compile(JBOSS_APPFILE_NAMING_REGEX, Pattern.CASE_INSENSITIVE);
+		
+	public static final String WEBSPHERE_PROPSFILE_NAMING_REGEX = "^(\\w|\\w-\\w)+-\\d+(\\.\\d+){3,5}[\\w\\.-]*(\\.zip)$";
+	public static final Pattern WEBSPHERE_PROPSFILE_REGEX_PATTERN = Pattern.compile(WEBSPHERE_PROPSFILE_NAMING_REGEX, Pattern.CASE_INSENSITIVE);
 	
-	@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-	private LocalDate searchDateFilterTo = LocalDate.now().withDayOfMonth(1).plusMonths(1);
+	public static final String JBOSS_PROPSFILE_NAMING_REGEX = "^(\\w|\\w-\\w)+-\\d+(\\.\\d+){3,5}[\\w\\.-]*(\\.zip|\\.jar)$";
+	public static final Pattern JBOSS_PROPSFILE_REGEX_PATTERN = Pattern.compile(JBOSS_PROPSFILE_NAMING_REGEX, Pattern.CASE_INSENSITIVE);
 
-	private String searchDeploymentId;
-	private Long searchProject;
-	private Long searchNode;
-	private Long searchEnvironment;
-	private String searchRequester;
-	private String searchStatus;
+	public static final String CMOD_PROPSFILE_NAMING_REGEX_RE = "^(.*)-\\d+\\.\\d+\\.\\d+\\.\\d+\\.zip$";
+	public static final String CMOD_PROPSFILE_NAMING_REGEX_RE4MAVEN = "^(.*)-\\d+\\.\\d+\\.\\d+\\.\\d+\\-[A-Za-z]{1,5}\\.zip$";
+	public static final String CMOD_PROPSFILE_NAMING_REGEX_RE5DIGIT = "^(.*)-\\d+\\.\\d+\\.\\d+\\.\\d+\\.\\d+\\.zip$";
+	public static final String CMOD_PROPSFILE_NAMING_REGEX_RE5DIGITMAVEN = "^(.*)-\\d+\\.\\d+\\.\\d+\\.\\d+\\.\\d+-[A-Za-z]{1,5}\\.zip$";
+	public static final Pattern CMOD_PROPSFILE_REGEX_PATTERN_RE = Pattern.compile(CMOD_PROPSFILE_NAMING_REGEX_RE, Pattern.CASE_INSENSITIVE);
+	public static final Pattern CMOD_PROPSFILE_REGEX_PATTERN_RE4MAVEN = Pattern.compile(CMOD_PROPSFILE_NAMING_REGEX_RE4MAVEN, Pattern.CASE_INSENSITIVE);
+	public static final Pattern CMOD_PROPSFILE_REGEX_PATTERN_RE5DIGIT = Pattern.compile(CMOD_PROPSFILE_NAMING_REGEX_RE5DIGIT, Pattern.CASE_INSENSITIVE);
+	public static final Pattern CMOD_PROPSFILE_REGEX_PATTERN_RE5DIGITMAVEN = Pattern.compile(CMOD_PROPSFILE_NAMING_REGEX_RE5DIGITMAVEN, Pattern.CASE_INSENSITIVE);
+		
+	public static final String CUSTOM_PROPSFILE_NAMING_REGEX_RE = "^(.*)-\\d+\\.\\d+\\.\\d+\\.\\d+(\\.zip|\\.war)$";
+	public static final String CUSTOM_PROPSFILE_NAMING_REGEX_RE4MAVEN = "^(.*)-\\d+\\.\\d+\\.\\d+\\.\\d+\\-[A-Za-z]{1,5}(\\.zip|\\.war)$";
+	public static final String CUSTOM_PROPSFILE_NAMING_REGEX_RE5DIGIT = "^(.*)-\\d+\\.\\d+\\.\\d+\\.\\d+\\.\\d+(\\.zip|\\.war)$";
+	public static final String CUSTOM_PROPSFILE_NAMING_REGEX_RE5DIGITMAVEN = "^(.*)-\\d+\\.\\d+\\.\\d+\\.\\d+\\.\\d+\\-[A-Za-z]{1,5}(\\.zip|\\.war)$";
+	public static final Pattern CUSTOM_PROPSFILE_REGEX_PATTERN_RE = Pattern.compile(CUSTOM_PROPSFILE_NAMING_REGEX_RE, Pattern.CASE_INSENSITIVE);
+	public static final Pattern CUSTOM_PROPSFILE_REGEX_PATTERN_RE4MAVEN = Pattern.compile(CUSTOM_PROPSFILE_NAMING_REGEX_RE4MAVEN, Pattern.CASE_INSENSITIVE);
+	public static final Pattern CUSTOM_PROPSFILE_REGEX_PATTERN_RE5DIGIT = Pattern.compile(CUSTOM_PROPSFILE_NAMING_REGEX_RE5DIGIT, Pattern.CASE_INSENSITIVE);
+	public static final Pattern CUSTOM_PROPSFILE_REGEX_PATTERN_RE5DIGITMAVEN = Pattern.compile(CUSTOM_PROPSFILE_NAMING_REGEX_RE5DIGITMAVEN, Pattern.CASE_INSENSITIVE);
+		
+	public static final String EAR_COPY_TMP_SUBDIR_PREFIX = "tmp";	
+	public static final String EAR_COPY_TMP_DIR_ON_DMGR_DEFAULT_VALUE = "rmtools_tmp";
+	public static final String EAR_COPY_TMP_SUBDIR_PREFIX_ON_DMGR = "tmp";
 	
-	public SingleDeploymentForm() {}
+	private static final String SIMPLE_DATE_FORMAT_PATERN = "yyyyMMddHHmmss";
+	private static final String EXCEPTION_MSG = "Exception in class: {} . Message: {}";
+	private static final String ERROR_MSG = "Error: {}";
+
+	public enum ValidationTypeEnum { EAR_4_DIGITS, EAR_5_DIGITS, EAR_FILE_NEW, PROPS_FILE, PROPS_FILE_NEW }
+
 	
-	/**
-	 * Set the SingleDeploymentForm deployment fields.
-	 * This is when ApplicationDeployerForm is use as a Deployment DTO
-	 * 
-	 * @param deployment
-	 * @param deploymentRequesterName
-	 * @param deploymentSupportName
-	 * @param deploymentEnvTypeName
-	 * @param deploymentNodeName
-	 * @param deploymentEnvLabel
-	 * @param deploymentProjectName
-	 */
-	public SingleDeploymentForm(Deployment deployment, String deploymentRequesterName, String deploymentSupportName,
-			String deploymentEnvTypeName, String deploymentNodeName, String deploymentEnvLabel, String deploymentProjectName) 
-	{
-		setDeployment(deployment);
-		setDeploymentRequesterName(deploymentRequesterName);
-		setDeploymentSupportName(deploymentSupportName);
-		setDeploymentEnvTypeName(deploymentEnvTypeName);
-		setDeploymentNodeName(deploymentNodeName);
-		setDeploymentEnvLabel(deploymentEnvLabel);
-		setDeploymentProjectName(deploymentProjectName);
+	/** Number used for directory creation which is unique */
+	private static AtomicInteger uniqueNumber = new AtomicInteger();
+
+	public static final AtomicInteger getUniqueNumber() {
+		return uniqueNumber;
 	}
 
 	/**
-	 * Set the SingleDeploymentForm deployment fields.
-	 * This is when ApplicationDeployerForm is use as a Deployment DTO
+	 * Computes a directory name in the form of: "<PREFIX>yyyyMMddHHmmss<UNIQUE_NUMBER>"
 	 * 
-	 * @param deployment
-	 * @param deploymentRequesterName
-	 * @param deploymentSupportName
-	 * @param deploymentEnvTypeName
-	 * @param deploymentNodeName
-	 * @param deploymentEnvLabel
-	 * @param deploymentProjectName
+	 * @param pPrefix Prefix of the directory name
+	 * @return String New directory name
 	 */
-	public SingleDeploymentForm(Deployment deployment, String deploymentRequesterName, String deploymentSupportName,
-			String deploymentEnvTypeName, String deploymentNodeName, String deploymentEnvLabel, String deploymentProjectName, String deploymentRuntime) 
+	public String computeDirectoryName(String pPrefix) 
 	{
-		setDeployment(deployment);
-		setDeploymentRequesterName(deploymentRequesterName);
-		setDeploymentSupportName(deploymentSupportName);
-		setDeploymentEnvTypeName(deploymentEnvTypeName);
-		setDeploymentNodeName(deploymentNodeName);
-		setDeploymentEnvLabel(deploymentEnvLabel);
-		setDeploymentProjectName(deploymentProjectName);
-		setDeploymentRuntime(deploymentRuntime);
+		SimpleDateFormat directoryNamePrefix = new SimpleDateFormat(SIMPLE_DATE_FORMAT_PATERN);
+		
+		StringBuilder sbName = new StringBuilder(pPrefix);
+		sbName.append(directoryNamePrefix.format(new Date()));
+		sbName.append(getUniqueNumber().incrementAndGet());
+		sbName.trimToSize();
+		return sbName.toString();
 	}
 	
 	/**
-	 * Set the SingleDeploymentForm deployment fields.
-	 * This is when ApplicationDeployerForm is use as a Deployment DTO
+	 * Copy a file to a new temporary directory
 	 * 
-	 * @param deployment
-	 * @param deploymentRequesterName
-	 * @param deploymentEnvTypeName
-	 * @param deploymentNodeName
-	 * @param deploymentEnvLabel
-	 * @param deploymentProjectName
+	 * This method uses the default prefix EAR_COPY_TMP_SUBDIR_PREFIX
+	 * 
+	 * @see FileDirectoryService#copyFileIntoNewDirReturnFile(String, String, String) copyFileIntoNewDir
 	 */
-	public SingleDeploymentForm(Deployment deployment, String deploymentRequesterName, 
-			String deploymentEnvTypeName, String deploymentNodeName, String deploymentEnvLabel, String deploymentProjectName) 
+	public File copyFileIntoNewDirReturnFile(String pBaseDir, String pEarFile) throws RmtoolsException {
+		return copyFileIntoNewDirReturnFile(pBaseDir, pEarFile, FileDirectoryService.EAR_COPY_TMP_SUBDIR_PREFIX);
+	}
+
+	/**
+	 * Copy a file to a new temporary directory
+	 * 
+	 * @param pBaseDir The directory path name of the file
+	 * @param pEarFile The name of the file
+	 * @param pPrefix Prefix for the new directory name
+	 * @return File The new file
+	 * @throws IOException If an exception occurs during the copy process
+	 */
+	public File copyFileIntoNewDirReturnFile(String pBaseDir, String pEarFile, String pPrefix) throws RmtoolsException
 	{
-		setDeployment(deployment);
-		setDeploymentRequesterName(deploymentRequesterName);
-		setDeploymentEnvTypeName(deploymentEnvTypeName);
-		setDeploymentNodeName(deploymentNodeName);
-		setDeploymentEnvLabel(deploymentEnvLabel);
-		setDeploymentProjectName(deploymentProjectName);
+		String aNewDirName = computeDirectoryName(pPrefix);
+		
+		String aServerTmpDir = propertySrvRep.findByAkey("EAR_COPY_TMP_DIR").getAvalue();
+		String aNewPath = File.separator + aServerTmpDir + File.separator + aNewDirName;
+		File aNewPathFile = new File(aNewPath, pEarFile);
+		File aCurrentPathFile = new File(pBaseDir, pEarFile);
+		
+		try {
+			FileUtils.copyFile(aCurrentPathFile, aNewPathFile);
+		} catch (IOException ioe) {
+			logger.error("Exception upon copy of: {}{} into {}{}", pBaseDir, pEarFile, aNewPath, File.separator + pEarFile);
+			logger.error(ERROR_MSG, ioe);
+			throw new RmtoolsException(ioe);
+		}
+		
+		return aNewPathFile;
 	}
 
-	public Deployment getDeployment() {
-		return deployment;
+	/**
+	 * Verify if the archive file is valid
+	 * 
+	 * @param pFile The absolute name of the archive file
+	 * @return <code>true</code> if the archive is valid else <code>false</code>
+	 */
+	public boolean isFileCorrupted(List<String> errors, String pFile)
+	{
+		Runtime runtime = Runtime.getRuntime();
+		Properties sysProps = System.getProperties();
+		int exitCode = 0;
+		
+		if (sysProps.getProperty("os.name")!=null && sysProps.getProperty("os.name").startsWith("Windows"))
+			exitCode = executeCommand(runtime,"cmd /c jar -tf "+pFile, errors);
+		else
+			exitCode = executeCommand(runtime,"jar -tf "+pFile, errors);
+		
+		return (exitCode != 0);
+	}
+	
+	/**
+	 * Executes a system command
+	 * 
+	 * @param pRuntime Reference to the current single Java runtime instance
+	 * @param pCommand The command to be run
+	 * @return return code
+	 */
+	public int executeCommand(Runtime pRuntime, String pCommand, List<String> errors)
+	{
+		BufferedReader br = null;
+		InputStream stdout = null;
+		InputStreamReader isr = null;
+		InputStream stderr = null;
+
+		try 
+		{
+			logger.debug("Checking if file is valid. Executing command {}", pCommand);
+	    	
+        	Process proc = pRuntime.exec(pCommand);
+        	stdout = proc.getInputStream();
+        	isr = new InputStreamReader(stdout);
+        	br = new BufferedReader(isr);
+        	
+        	String st = null;        	
+        	while ((st = br.readLine()) != null){}
+        	
+        	stderr = proc.getErrorStream();
+        	isr = new InputStreamReader(stderr);
+        	br = new BufferedReader(isr);
+        	
+        	while ((st = br.readLine()) != null){ errors.add(st);}
+        	
+        	int exitVal = proc.waitFor();
+
+        	logger.debug("Process exitValue: {}", exitVal);
+	    	
+        	return exitVal;
+        }
+        catch (Exception e){
+        	logger.error("Exception in class: {} during execution of the command: {}. {}", FileDirectoryService.class.getName(), pCommand, e.getMessage());
+        	logger.error(ERROR_MSG, e);
+            return 1;
+        }
+        finally 
+        {
+			try {
+				if (br != null)
+					br.close();
+			}  
+			catch (IOException ioe) {
+				logger.error(EXCEPTION_MSG, FileDirectoryService.class.getName(), ioe.getMessage());
+				logger.error(ERROR_MSG, ioe);
+			}        	
+        }
+    }
+	
+	/**
+	 * Validate a filename against the naming convention
+	 * 
+	 * @param pFileName The filename to validate
+	 * @param pType The type of the filename to validate
+	 * @return <code>true</code> if the filename is verified else <code>false</code>
+	 */
+	public boolean validateWebsphereFileName(String pFileName, ValidationTypeEnum pType) 
+	{		
+		if (ValidationTypeEnum.EAR_4_DIGITS == pType || ValidationTypeEnum.EAR_5_DIGITS == pType) {
+			return WEBSPHERE_APPFILE_REGEX_PATTERN.matcher(pFileName).matches();
+		}
+		else if (ValidationTypeEnum.PROPS_FILE == pType){
+			return WEBSPHERE_PROPSFILE_REGEX_PATTERN.matcher(pFileName).matches();
+		}
+
+		return false;
+	}
+	
+	/**
+	 * Validate a filename against the naming convention
+	 * 
+	 * @param pFileName The filename to validate
+	 * @param pType The type of the filename to validate
+	 * @return <code>true</code> if the filename is verified else <code>false</code>
+	 */
+	public boolean validateJBossFileName(String pFileName, ValidationTypeEnum pType) 
+	{		
+		if (ValidationTypeEnum.EAR_4_DIGITS == pType || ValidationTypeEnum.EAR_5_DIGITS == pType) {
+			return JBOSS_APPFILE_REGEX_PATTERN.matcher(pFileName).matches();
+		}
+		else if (ValidationTypeEnum.PROPS_FILE == pType){
+			return JBOSS_PROPSFILE_REGEX_PATTERN.matcher(pFileName).matches();
+		}
+
+		return false;
 	}
 
-	public void setDeployment(Deployment deployment) {
-		this.deployment = deployment;
+	/**
+	 * Validate a filename against the naming convention
+	 * 
+	 * @param pFileName The filename to validate
+	 * @param pType The type of the filename to validate
+	 * @return <code>true</code> if the filename is verified else <code>false</code>
+	 */
+	public boolean validateCmodFileName(String pFileName) 
+	{		
+		return CMOD_PROPSFILE_REGEX_PATTERN_RE.matcher(pFileName).matches()
+				|| CMOD_PROPSFILE_REGEX_PATTERN_RE4MAVEN.matcher(pFileName).matches()
+				|| CMOD_PROPSFILE_REGEX_PATTERN_RE5DIGIT.matcher(pFileName).matches()
+				|| CMOD_PROPSFILE_REGEX_PATTERN_RE5DIGITMAVEN.matcher(pFileName).matches();
 	}
 
-	public String getDeploymentRequesterName() {
-		return deploymentRequesterName;
+	/**
+	 * Validate a filename against the naming convention
+	 * 
+	 * @param pFileName The filename to validate
+	 * @param pType The type of the filename to validate
+	 * @return <code>true</code> if the filename is verified else <code>false</code>
+	 */
+	public boolean validateCustomFileName(String pFileName, ValidationTypeEnum pType) 
+	{		
+		return CUSTOM_PROPSFILE_REGEX_PATTERN_RE.matcher(pFileName).matches()
+				|| CUSTOM_PROPSFILE_REGEX_PATTERN_RE4MAVEN.matcher(pFileName).matches()
+				|| CUSTOM_PROPSFILE_REGEX_PATTERN_RE5DIGIT.matcher(pFileName).matches()
+				|| CUSTOM_PROPSFILE_REGEX_PATTERN_RE5DIGITMAVEN.matcher(pFileName).matches();
 	}
 
-	public void setDeploymentRequesterName(String deploymentRequesterName) {
-		this.deploymentRequesterName = deploymentRequesterName;
-	}
-
-	public String getDeploymentSupportName() {
-		return deploymentSupportName;
-	}
-
-	public void setDeploymentSupportName(String deploymentSupportName) {
-		this.deploymentSupportName = deploymentSupportName;
-	}
-
-	public String getDeploymentEnvTypeName() {
-		return deploymentEnvTypeName;
-	}
-
-	public void setDeploymentEnvTypeName(String deploymentEnvTypeName) {
-		this.deploymentEnvTypeName = deploymentEnvTypeName;
-	}
-
-	public String getDeploymentNodeName() {
-		return deploymentNodeName;
-	}
-
-	public void setDeploymentNodeName(String deploymentNodeName) {
-		this.deploymentNodeName = deploymentNodeName;
-	}
-
-	public String getDeploymentEnvLabel() {
-		return deploymentEnvLabel;
-	}
-
-	public void setDeploymentEnvLabel(String deploymentEnvLabel) {
-		this.deploymentEnvLabel = deploymentEnvLabel;
-	}
-
-	public String getDeploymentProjectName() {
-		return deploymentProjectName;
-	}
-
-	public void setDeploymentProjectName(String deploymentProjectName) {
-		this.deploymentProjectName = deploymentProjectName;
-	}
-
-	public String getDeploymentRuntime() {
-		return deploymentRuntime;
-	}
-
-	public void setDeploymentRuntime(String deploymentRuntime) {
-		this.deploymentRuntime = deploymentRuntime;
-	}
-
-	public Long getQueueId() {
-		return queueId;
-	}
-
-	public void setQueueId(Long queueId) {
-		this.queueId = queueId;
-	}
-
-	// ================================================== SEARCH FIELDS	
-	public LocalDate getSearchDateFilterFrom() {
-		if (searchDateFilterFrom == null)
-			searchDateFilterFrom = LocalDate.now();
+	/**
+	 * Returns the number of elements in the path, or 0 if this path only represents a root component
+	 * 
+	 * Directories must be followed by a separator even for the last directory. Else it's considered as 
+	 * a filename without extension. Supports is provided for both Unix like and Windows paths.
+	 * 
+	 * <pre>
+	 * C:\							--> 0
+	 * C:\source\					--> 1
+	 * C:\WAS8props\dev\RMTools		--> 2
+	 * C:\WAS8props\dev\RMTools\	--> 3
+	 * C:\WAS8props\dev\RMTools\test.properties	--> 3
+	 * ~/							--> 0
+	 * ~/a/							--> 1
+	 * /source/WAS8props/dev		--> 2
+	 * /source/WAS8props/dev/		--> 3
+	 * ~/source/WAS8props/dev/test.properties	--> 3
+	 * </pre>
+	 * @param pPath The directory name or filename to look at
+	 * @return Number of elements in the path, or 0 if this path only represents a root component
+	 */	
+	public int countElementsInPath(String pPath)
+	{
+		int aCount = 0;
+		String aPathOnly = StringUtils.trimToEmpty(FilenameUtils.getPathNoEndSeparator(pPath));
+		
+		if (StringUtils.isBlank(aPathOnly)){
+			return aCount;
+		}
+		else
+		{
+			int aIndex = 0;
+			boolean bolLoop = true;
+			while (bolLoop)
+			{
+				aIndex = FilenameUtils.indexOfLastSeparator(aPathOnly);
+				
+				if (aIndex > 0) {
+					aCount++;
+					aPathOnly = StringUtils.trimToEmpty(StringUtils.substring(aPathOnly, 0, aIndex));
+				}
+				else 
+					bolLoop = false;
+			}
 			
-		return  searchDateFilterFrom;
-	}
-
-	public void setSearchDateFilterFrom(LocalDate searchDateFilterFrom) {
-		this.searchDateFilterFrom = searchDateFilterFrom;
-	}
-
-	public LocalDate getSearchDateFilterTo() {
-		if (searchDateFilterTo == null)
-			searchDateFilterTo = LocalDate.now().plusMonths(1);
+			// add one for the first dir element if not blank
+			if (StringUtils.isNotBlank(aPathOnly)){
+				aCount++;
+			}
+		}
 		
-		return searchDateFilterTo;
-	}
-
-	public void setSearchDateFilterTo(LocalDate searchDateFilterTo) {
-		this.searchDateFilterTo = searchDateFilterTo;
-	}
-
-	private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-	public String getSearchDateFilterFromFormatted() {
-		return dtf.format(searchDateFilterFrom);
-	}
-
-	public String getSearchDateFilterToFormatted() {
-		return dtf.format(searchDateFilterTo);
+		return aCount;
 	}
 	
-	public String getSearchDeploymentId() {
-		return searchDeploymentId;
-	}
+	/**
+	 * Check if the path is a directory and if it doesn't exists then create it
+	 * 
+	 * @param pFilePathUpload
+	 * @return
+	 */
+	public boolean isDirectoryAndCreate(String pFilePathUpload) 
+	{
+		boolean bolReturn = true;
+		File dir = new File(pFilePathUpload);
+		if (!dir.isDirectory() && !dir.mkdirs())
+			bolReturn = false;
 
-	public void setSearchDeploymentId(String searchDeploymentId) {
-		this.searchDeploymentId = searchDeploymentId;
-	}
-
-	public Long getSearchProject() {
-		return searchProject;
-	}
-
-	public void setSearchProject(Long searchProject) {
-		this.searchProject = searchProject;
-	}
-			
-	public Long getSearchNode() {
-		return searchNode;
-	}
-
-	public void setSearchNode(Long searchNode) {
-		this.searchNode = searchNode;
-	}
-
-	public Long getSearchEnvironment() {
-		return searchEnvironment;
-	}
-
-	public void setSearchEnvironment(Long searchEnvironment) {
-		this.searchEnvironment = searchEnvironment;
-	}
-
-	public String getSearchRequester() {
-		return searchRequester;
-	}
-
-	public void setSearchRequester(String searchRequester) {
-		this.searchRequester = searchRequester;
+		return bolReturn;
 	}
 	
-	public String getSearchStatus() {
-		return searchStatus;
-	}
-
-	public void setSearchStatus(String searchStatus) {
-		this.searchStatus = searchStatus;
-	}
-
-	// ================================================== SEARCH FIELDS
-
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((deploymentNodeName == null) ? 0 : deploymentNodeName.hashCode());
-		result = prime * result + ((deploymentProjectName == null) ? 0 : deploymentProjectName.hashCode());
-		return result;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
+	/**
+	 * Search if the provided artifact name exists in the repository location also provided
+	 * 
+	 * @param pRepos the repository where to search
+	 * @param pFileName the filename to look for
+	 * @return a list of matches or 
+	 */
+	public List<String> searchForArtefact(String pRepos, String pFileName)
+	{
+		List<String> listReturned = new ArrayList<>();
 		
-		SingleDeploymentForm other = (SingleDeploymentForm) obj;
-		if (deploymentNodeName == null) {
-			if (other.deploymentNodeName != null)
-				return false;
-		} else if (!deploymentNodeName.equals(other.deploymentNodeName))
-			return false;
-		if (deploymentProjectName == null) {
-			if (other.deploymentProjectName != null)
-				return false;
-		} else if (!deploymentProjectName.equals(other.deploymentProjectName))
-			return false;
+		List<String> dslDirs = envTypeSrvRep.findDistinctDslDir();
+		dslDirs.add(0, "");
+		for (String dslDir : dslDirs)
+		{
+			if (new File(pRepos + File.separatorChar + dslDir + File.separatorChar + pFileName).exists()) 
+				listReturned.add(pRepos + File.separatorChar + dslDir);
+		}
 		
-		return true;
+		return listReturned;
+	}
+	
+	/**
+	 * 
+	 * Search if the provided artifact name exists in Prep or Prod
+	 * 
+	 * @param pRepos the repository where to search
+	 * @param pFileName the filename to look for
+	 * @return a list of matches or 
+	 */
+	public Boolean validateArtefactForProdDeployment(String pRepos, String pFileName)
+	{
+		List<String> dslDirs = new ArrayList<>();
+		dslDirs.add(EnvironmentType.PREP.getValue());
+		dslDirs.add(EnvironmentType.PROD.getValue());
+		
+		for (String dslDir : dslDirs)
+			if (new File(pRepos + File.separatorChar + dslDir + File.separatorChar + pFileName).exists()) 
+				return true;
+		
+		return false;
 	}
 
-	@Override
-	public String toString() {
-		return "SingleDeploymentForm [deployment=" + deployment + ", deploymentRequesterName=" + deploymentRequesterName
-				+ ", deploymentSupportName=" + deploymentSupportName + ", deploymentEnvTypeName="
-				+ deploymentEnvTypeName + ", deploymentNodeName=" + deploymentNodeName + ", deploymentEnvLabel="
-				+ deploymentEnvLabel + ", deploymentProjectName=" + deploymentProjectName + ", searchDateFilterFrom="
-				+ searchDateFilterFrom + ", searchDateFilterTo=" + searchDateFilterTo + ", queueId=" + queueId +"]";
+	public BigDecimal getFileSystemUsed(String volume)
+	{
+		File cDrive = new File(volume);
+		
+		long gigabytes = 1073741824L;
+		BigDecimal oneHundred = new BigDecimal(100);
+		
+		MathContext mc = new MathContext(3);
+		df.setDecimalFormatSymbols(DecimalFormatSymbols.getInstance(Locale.ENGLISH));
+		
+		BigDecimal totalSpaceGb = BigDecimal.valueOf(cDrive.getTotalSpace()).divide(BigDecimal.valueOf(gigabytes));
+		BigDecimal usableSpaceGb = BigDecimal.valueOf(cDrive.getUsableSpace()).divide(BigDecimal.valueOf(gigabytes));
+		BigDecimal usedSpaceGb = totalSpaceGb.subtract(usableSpaceGb);
+		
+		return usedSpaceGb.divide(totalSpaceGb, mc).multiply(oneHundred, mc);				
 	}
 
 }
