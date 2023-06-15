@@ -1,0 +1,45 @@
+GIT
+	You have an empty repository To get started you will need to run these commands in your terminal.
+
+	New to Git? Learn the basic Git commands Configure Git for the first time
+		git config --global user.name "Claude Gratton"
+		git config --global user.email "claude.gratton@desjardins.com"
+		Working with your repository
+		I just want to clone this repository
+		If you want to simply clone this empty repository then run this command in your terminal.
+
+	GIT HIB DesJardins
+          signed in as claude-gratton_mvt
+	
+	REPO: desjardins/marche-capitaux
+	Token: 
+		Name: Token_Dejardins 
+		Token: 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
+		
+          https://github.com/orgs/Desjardins/attribution-invitations
+
+	cd directory
+	git clone 
+		https://sipl.claude.com/stash/scm/mar/efix.git
+		https://MYUSER@claude.com/stash/scm/mar/efix.git
+
+==================================================================================================
+	My code is ready to be pushed
+		If you already have code ready to be pushed to this repository then run this in your terminal.
+
+  Create the repository on github ex: https://github.com/claudeinc/newproject-mock.git
+
+	cd existing-project
+	git init
+	git add --all
+	git commit -m "Initial Commit"
+	git remote add origin https://MYUSER@claude.com/stash/scm/mar/efix.git
+	git push -u origin master
+
+	My code is already tracked by Git
+		If your code is already tracked by Git then set this repository as your "origin" to push to.
+
+	cd existing-project
+	git remote set-url origin https://MYUSER@claude.com/stash/scm/mar/efix.git
+	git push -u origin --all
+	git push origin --tags
